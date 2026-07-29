@@ -27,7 +27,15 @@ class BacktestEngine:
         if len(df) < WARMUP_BARS + 5:
             raise ValueError("Not enough historical candles for backtest warmup")
 
-        enriched = self.evaluator._enrich_dataframe(df, definition)
+        work = df.copy()
+        for col in ("open", "high", "low", "close", "volume"):
+            if col in work.columns:
+                work[col] = pd.to_numeric(work[col], errors="coerce")
+        work = work.dropna(subset=["open", "high", "low", "close"])
+        if len(work) < WARMUP_BARS + 5:
+            raise ValueError("Not enough numeric candles for backtest warmup")
+
+        enriched = self.evaluator._enrich_dataframe(work, definition)
         position: str | None = None
         entry_price = 0.0
         entry_index = 0
