@@ -10,7 +10,7 @@ from sqlalchemy.orm import joinedload
 from app.config.alerts import email_alerts_enabled
 from app.database import db
 from app.models import Signal
-from app.risk.levels import format_price, levels_from_entry
+from app.risk.levels import format_price, levels_for_signal_alert, levels_from_entry
 from app.risk.outcome import evaluate_candles, levels_for_signal, unrealized_pnl_pct
 from app.services.base import BaseService
 from app.services.email_service import EmailService
@@ -53,6 +53,10 @@ class SignalService(BaseService[Signal]):
         timeframe: str,
         price: float,
         candle_time: datetime,
+        stop_loss: float | None = None,
+        take_profit: float | None = None,
+        definition: dict | None = None,
+        atr: float | None = None,
     ) -> Signal | None:
         if candle_time.tzinfo is None:
             candle_time = candle_time.replace(tzinfo=timezone.utc)
@@ -67,7 +71,24 @@ class SignalService(BaseService[Signal]):
             )
             return None
 
-        levels = levels_from_entry(signal_type, price)
+        levels = levels_for_signal_alert(
+            signal_type,
+            price,
+            definition=definition,
+            atr=atr,
+        )
+        if stop_loss is not None and take_profit is not None:
+            from app.risk.levels import RiskLevels
+
+            levels = RiskLevels(
+                entry=float(price),
+                stop_loss=float(stop_loss),
+                take_profit=float(take_profit),
+                stop_loss_pct=abs(float(stop_loss) - float(price)) / float(price) * 100,
+                take_profit_pct=abs(float(take_profit) - float(price)) / float(price) * 100,
+                side="long" if str(signal_type).upper() == "BUY" else "short",
+            )
+
         signal = Signal(
             coin_id=coin_id,
             strategy_id=strategy_id,
@@ -84,7 +105,6 @@ class SignalService(BaseService[Signal]):
         db.session.flush()
 
         notified = False
-        # Email alerts are off by default (ENABLE_EMAIL_ALERTS); FCM push is the active channel.
         if email_alerts_enabled():
             smtp = SettingsService().get_smtp()
             if smtp.receiver_email and smtp.smtp_server:
@@ -97,6 +117,7 @@ class SignalService(BaseService[Signal]):
                         price=price,
                         strategy_name=strategy_name,
                         candle_time_utc=candle_time.strftime("%Y-%m-%d %H:%M UTC"),
+                        levels=levels,
                     )
                     notified = True
                 except Exception as exc:
@@ -109,6 +130,7 @@ class SignalService(BaseService[Signal]):
                 timeframe=timeframe,
                 price=price,
                 strategy_name=strategy_name,
+                levels=levels,
             )
             if push_count:
                 notified = True
@@ -130,6 +152,12 @@ class SignalService(BaseService[Signal]):
             .limit(limit)
             .all()
         )
+
+    def delete_all(self) -> int:
+        deleted = Signal.query.delete()
+        db.session.commit()
+        logger.info("Deleted %s signals", deleted)
+        return int(deleted or 0)
 
     def summary_stats(self) -> dict[str, Any]:
         rows = Signal.query.with_entities(Signal.status, func.count(Signal.id)).group_by(Signal.status).all()

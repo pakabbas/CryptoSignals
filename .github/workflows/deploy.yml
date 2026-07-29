@@ -192,6 +192,15 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             'cd /var/www/cryptosignals && HISTORY_WARMUP_DAYS=7 /var/www/cryptosignals/.venv/bin/python /var/www/cryptosignals/deploy/warmup_history.py'
 
+      - name: Apply indicators.md reset (BTC/SOL + clear history)
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            'cd /var/www/cryptosignals && BASELINE_BACKTEST_DAYS=7 RUN_BASELINE_BACKTESTS=true /var/www/cryptosignals/.venv/bin/python /var/www/cryptosignals/deploy/apply_indicators_reset.py'
+
       - name: Health check
         env:
           SSH_HOST: ${{ secrets.GCP_SSH_HOST }}

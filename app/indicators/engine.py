@@ -205,10 +205,33 @@ class IndicatorRegistry:
         return out
 
     @staticmethod
+    def _stochrsi(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
+        rsi_len = int(params.get("length", params.get("rsi_length", 14)))
+        stoch_len = int(params.get("stoch_length", rsi_len))
+        smooth_k = int(params.get("smooth_k", 3))
+        smooth_d = int(params.get("smooth_d", 3))
+        out = IndicatorRegistry._rsi(df, {"length": rsi_len})
+        rsi_col = f"RSI_{rsi_len}"
+        rsi = out[rsi_col]
+        min_rsi = rsi.rolling(stoch_len).min()
+        max_rsi = rsi.rolling(stoch_len).max()
+        raw_k = (rsi - min_rsi) / (max_rsi - min_rsi).replace(0, pd.NA)
+        # Scale 0–100 to match common StochRSI thresholds (20/80).
+        raw_k = raw_k * 100
+        k = raw_k.rolling(smooth_k).mean()
+        d = k.rolling(smooth_d).mean()
+        suffix = f"{rsi_len}_{stoch_len}_{smooth_k}_{smooth_d}"
+        out[f"STOCHRSIk_{suffix}"] = k
+        out[f"STOCHRSId_{suffix}"] = d
+        # Backward-compatible alias used by older specs
+        out[f"STOCHRSIk_{rsi_len}"] = k
+        return out
+
+    @staticmethod
     def _vwap(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
         out = df.copy()
         tp = (out["high"] + out["low"] + out["close"]) / 3
-        out["VWAP"] = (tp * out["volume"]).cumsum() / out["volume"].cumsum()
+        out["VWAP"] = (tp * out["volume"]).cumsum() / out["volume"].cumsum().replace(0, pd.NA)
         return out
 
     @staticmethod
@@ -222,17 +245,6 @@ class IndicatorRegistry:
         lower = hl2 - multiplier * out[atr_col]
         out[f"SUPERTd_{length}"] = lower
         out[f"SUPERTu_{length}"] = upper
-        return out
-
-    @staticmethod
-    def _stochrsi(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
-        length = _length(params, 14)
-        out = IndicatorRegistry._rsi(df, {"length": length})
-        rsi_col = f"RSI_{length}"
-        rsi = out[rsi_col]
-        min_rsi = rsi.rolling(length).min()
-        max_rsi = rsi.rolling(length).max()
-        out[f"STOCHRSIk_{length}"] = (rsi - min_rsi) / (max_rsi - min_rsi).replace(0, pd.NA)
         return out
 
     @staticmethod

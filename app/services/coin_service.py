@@ -12,6 +12,9 @@ from app.utils.logging_setup import get_logger
 
 logger = get_logger("app")
 
+# Active monitored pairs (others stay seeded but disabled).
+ACTIVE_COIN_SYMBOLS: tuple[str, ...] = ("BTC/USDT", "SOL/USDT")
+
 # Per-pair market data source (matches Coins UI on production).
 DEFAULT_COIN_EXCHANGES: dict[str, str] = {
     "BTC/USDT": "kraken",
@@ -49,27 +52,33 @@ class CoinService(BaseService[Coin]):
 
         for symbol in self._default_symbols():
             desired_exchange = DEFAULT_COIN_EXCHANGES.get(symbol, exchange)
+            should_enable = symbol in ACTIVE_COIN_SYMBOLS
             coin = Coin.query.filter_by(symbol=symbol).first()
             if coin is None:
                 group = "primary" if symbol == primary_symbol else "alt"
                 coin = Coin(
                     symbol=symbol,
                     exchange=desired_exchange,
-                    enabled=True,
+                    enabled=should_enable,
                     group_name=group,
                 )
                 db.session.add(coin)
                 created_any = True
-                logger.info("Seeded coin %s (%s)", symbol, desired_exchange)
-            elif symbol in DEFAULT_COIN_EXCHANGES and coin.exchange != desired_exchange:
-                coin.exchange = desired_exchange
-                updated_any = True
-                logger.info("Updated coin %s exchange -> %s", symbol, desired_exchange)
+                logger.info("Seeded coin %s (%s) enabled=%s", symbol, desired_exchange, should_enable)
+            else:
+                if symbol in DEFAULT_COIN_EXCHANGES and coin.exchange != desired_exchange:
+                    coin.exchange = desired_exchange
+                    updated_any = True
+                    logger.info("Updated coin %s exchange -> %s", symbol, desired_exchange)
+                if coin.enabled != should_enable:
+                    coin.enabled = should_enable
+                    updated_any = True
+                    logger.info("Updated coin %s enabled -> %s", symbol, should_enable)
             result.append(coin)
 
         if created_any or updated_any:
             db.session.commit()
-        if created_any:
+        if created_any or updated_any:
             from app.services.strategy_service import StrategyService
 
             StrategyService().attach_new_enabled_coins_to_active_strategies()

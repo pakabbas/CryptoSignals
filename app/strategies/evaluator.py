@@ -234,6 +234,12 @@ class StrategyEvaluator:
             side = rule.get("side", "long")
             label = f"Bollinger+RSI reversion ({side})"
             return label, "Prior bar outside band, RSI extreme, close back inside"
+        if rtype == "indicator_cross":
+            direction = rule.get("direction", "up")
+            left = self._node_label(rule.get("left", {}))
+            right = self._node_label(rule.get("right", {}))
+            label = f"{left} cross {'above' if direction == 'up' else 'below'} {right}"
+            return label, "Waiting for cross" if not self._indicator_cross(df, rule, bar_idx) else "Cross confirmed"
         return "Rule", "Unknown rule type"
 
     def _snapshot_indicators(self, df: pd.DataFrame, bar_idx: int) -> dict[str, float]:
@@ -306,6 +312,9 @@ class StrategyEvaluator:
                 continue
             for rule in block.get("rules", []):
                 specs.extend(self._specs_from_rule(rule))
+        risk = definition.get("risk")
+        if isinstance(risk, dict):
+            specs.append({"name": "ATR", "length": int(risk.get("atr_length", 14))})
         # dedupe
         seen: set[str] = set()
         unique: list[dict[str, Any]] = []
@@ -321,7 +330,17 @@ class StrategyEvaluator:
         for node in (rule.get("left"), rule.get("right")):
             specs.extend(self._specs_from_node(node))
         if rule.get("type") == "macd_cross":
-            specs.append({"name": "MACD", "fast": 12, "slow": 26, "signal": 9})
+            specs.append(
+                {
+                    "name": "MACD",
+                    "fast": int(rule.get("fast", 12)),
+                    "slow": int(rule.get("slow", 26)),
+                    "signal": int(rule.get("signal", 9)),
+                }
+            )
+        if rule.get("type") == "indicator_cross":
+            for node in (rule.get("left"), rule.get("right")):
+                specs.extend(self._specs_from_node(node))
         if rule.get("type") in {"price_at_bb", "bb_reversion"}:
             specs.append({"name": "BB", "length": 20, "std": 2.0})
             specs.append({"name": "RSI", "length": 14})
@@ -333,6 +352,20 @@ class StrategyEvaluator:
         name = str(node.get("name", "")).upper()
         if name in {"VOLUME", "CLOSE"}:
             return []
+        if name in {"STOCHRSIk", "STOCHRSID", "STOCHRSI"}:
+            return [
+                {
+                    "name": "STOCHRSI",
+                    "length": int(node.get("length", 14)),
+                    "stoch_length": int(node.get("stoch_length", node.get("length", 14))),
+                    "smooth_k": int(node.get("smooth_k", 3)),
+                    "smooth_d": int(node.get("smooth_d", 3)),
+                }
+            ]
+        if name == "VWAP":
+            return [{"name": "VWAP"}]
+        if name == "ATR":
+            return [{"name": "ATR", "length": int(node.get("length", 14))}]
         if name == "MACDH":
             return [
                 {
@@ -407,6 +440,8 @@ class StrategyEvaluator:
             if direction == "up":
                 return prev_diff <= 0 < curr_diff
             return prev_diff >= 0 > curr_diff
+        if rtype == "indicator_cross":
+            return self._indicator_cross(df, rule, bar_idx)
         if rtype == "price_at_bb":
             band = rule.get("band", "lower")
             lower = next((c for c in df.columns if c.startswith("BBL_")), None)
@@ -420,6 +455,32 @@ class StrategyEvaluator:
         if rtype == "bb_reversion":
             return self._bb_reversion(df, rule, bar_idx)
         return False
+
+    def _indicator_cross(self, df: pd.DataFrame, rule: dict[str, Any], bar_idx: int) -> bool:
+        if bar_idx < 1:
+            return False
+        left_prev = self._resolve_value(df, rule.get("left", {}), bar_idx - 1)
+        right_prev = self._resolve_value(df, rule.get("right", {}), bar_idx - 1)
+        left_curr = self._resolve_value(df, rule.get("left", {}), bar_idx)
+        right_curr = self._resolve_value(df, rule.get("right", {}), bar_idx)
+        if None in (left_prev, right_prev, left_curr, right_curr):
+            return False
+        direction = rule.get("direction", "up")
+        if direction == "up":
+            crossed = left_prev <= right_prev and left_curr > right_curr
+            if not crossed:
+                return False
+            from_below = rule.get("from_below")
+            if from_below is not None and not (left_prev < float(from_below)):
+                return False
+            return True
+        crossed = left_prev >= right_prev and left_curr < right_curr
+        if not crossed:
+            return False
+        from_above = rule.get("from_above")
+        if from_above is not None and not (left_prev > float(from_above)):
+            return False
+        return True
 
     def _bb_reversion(self, df: pd.DataFrame, rule: dict[str, Any], bar_idx: int) -> bool:
         if bar_idx < 1:
@@ -473,6 +534,18 @@ class StrategyEvaluator:
             col = f"SMA_{source}_{int(node.get('length', 20))}"
         elif name == "RSI":
             col = f"RSI_{int(node.get('length', 14))}"
+        elif name == "ATR":
+            col = f"ATR_{int(node.get('length', 14))}"
+        elif name == "VWAP":
+            col = "VWAP"
+        elif name in {"STOCHRSIk", "STOCHRSID"}:
+            length = int(node.get("length", 14))
+            stoch_length = int(node.get("stoch_length", length))
+            smooth_k = int(node.get("smooth_k", 3))
+            smooth_d = int(node.get("smooth_d", 3))
+            suffix = f"{length}_{stoch_length}_{smooth_k}_{smooth_d}"
+            prefix = "STOCHRSIk" if name == "STOCHRSIk" else "STOCHRSId"
+            col = f"{prefix}_{suffix}"
         elif name == "MACDH":
             f, s, sig = int(node.get("fast", 12)), int(node.get("slow", 26)), int(node.get("signal", 9))
             col = f"MACDh_{f}_{s}_{sig}"
@@ -486,6 +559,20 @@ class StrategyEvaluator:
         if col not in df.columns:
             return None
         val = df[col].iloc[idx]
+        if pd.isna(val):
+            return None
+        return float(val)
+
+    def atr_at_index(self, df: pd.DataFrame, definition: dict[str, Any], bar_idx: int) -> float | None:
+        from app.risk.levels import risk_spec_from_definition
+
+        spec = risk_spec_from_definition(definition)
+        length = spec.atr_length if spec else 14
+        enriched = df if f"ATR_{length}" in df.columns else self.registry.compute("ATR", df, {"length": length})
+        col = f"ATR_{length}"
+        if col not in enriched.columns or bar_idx < 0 or bar_idx >= len(enriched):
+            return None
+        val = enriched[col].iloc[bar_idx]
         if pd.isna(val):
             return None
         return float(val)

@@ -88,6 +88,18 @@ class ScannerService:
         if not result.signal_type:
             return False
 
+        # Re-enrich for ATR risk (evaluate already enriched internally; fetch ATR via helper)
+        enriched = self.evaluator._enrich_dataframe(df, strategy.definition_json)
+        atr = self.evaluator.atr_at_index(enriched, strategy.definition_json, result.bar_index)
+        from app.risk.levels import levels_for_signal_alert
+
+        levels = levels_for_signal_alert(
+            result.signal_type,
+            result.price,
+            definition=strategy.definition_json,
+            atr=atr,
+        )
+
         candle_time = result.candle_time.to_pydatetime()
         created = self.signals.create_and_notify(
             coin_id=coin.id,
@@ -98,6 +110,10 @@ class ScannerService:
             timeframe=timeframe,
             price=result.price,
             candle_time=candle_time,
+            stop_loss=levels.stop_loss,
+            take_profit=levels.take_profit,
+            definition=strategy.definition_json,
+            atr=atr,
         )
         return created is not None
 

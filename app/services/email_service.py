@@ -5,7 +5,7 @@ from email.message import EmailMessage
 from email.utils import formataddr
 
 from app.models import SmtpSetting
-from app.risk.levels import format_risk_lines, levels_from_entry
+from app.risk.levels import RiskLevels, format_risk_lines, levels_from_entry
 from app.services.base import BaseService
 from app.utils.logging_setup import get_logger
 
@@ -23,12 +23,13 @@ class EmailService(BaseService[SmtpSetting]):
         price: float,
         strategy_name: str,
         candle_time_utc: str,
+        levels: RiskLevels | None = None,
     ) -> None:
         subject = smtp.subject_template.format(
             signal_type=signal_type,
             symbol=symbol.replace("/", ""),
         )
-        levels = levels_from_entry(signal_type, price)
+        levels = levels or levels_from_entry(signal_type, price)
         body = (
             "--------------------------------\n\n"
             f"{signal_type} Signal\n\n"

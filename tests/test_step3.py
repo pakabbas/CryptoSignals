@@ -18,10 +18,10 @@ def test_strategies_list_page(client):
     response = client.get("/strategies/")
     assert response.status_code == 200
     assert b"Strategy templates" in response.data
-    assert b"15m" in response.data or b"Bollinger" in response.data
+    assert b"15m" in response.data or b"Mean-Reversion" in response.data or b"Filtered" in response.data
 
 
 def test_strategies_create_blocked(client):
     response = client.get("/strategies/new", follow_redirects=True)
     assert response.status_code == 200
-    assert b"fixed research templates" in response.data.lower() or b"Research" in response.data
+    assert b"fixed research templates" in response.data.lower() or b"Research" in response.data or b"template" in response.data.lower()

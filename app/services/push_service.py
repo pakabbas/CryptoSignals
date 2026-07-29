@@ -8,7 +8,7 @@ from app.config.alerts import push_alerts_enabled
 from app.database import db
 from app.models import PushDevice
 from app.services.base import BaseService
-from app.risk.levels import format_risk_lines, levels_from_entry
+from app.risk.levels import RiskLevels, format_risk_lines, levels_from_entry
 from app.utils.logging_setup import get_logger
 
 logger = get_logger("app")
@@ -131,8 +131,9 @@ class PushNotificationService(BaseService[PushDevice]):
         timeframe: str,
         price: float,
         strategy_name: str,
+        levels: RiskLevels | None = None,
     ) -> int:
-        levels = levels_from_entry(signal_type, price)
+        levels = levels or levels_from_entry(signal_type, price)
         title = f"{signal_type} · {symbol}"
         body = (
             f"{strategy_name} · {timeframe}\n"

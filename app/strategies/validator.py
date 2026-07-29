@@ -7,7 +7,13 @@ class StrategyValidationError(ValueError):
     pass
 
 
-VALID_RULE_TYPES = {"indicator_compare", "macd_cross", "price_at_bb", "bb_reversion"}
+VALID_RULE_TYPES = {
+    "indicator_compare",
+    "macd_cross",
+    "indicator_cross",
+    "price_at_bb",
+    "bb_reversion",
+}
 VALID_OPERATORS = {"gt", "gte", "lt", "lte", "eq", ">", ">=", "<", "<=", "=="}
 VALID_LOGIC = {"AND", "OR", "NOT"}
 
@@ -68,6 +74,13 @@ def _validate_rule(side_name: str, index: int, rule: dict[str, Any]) -> None:
         direction = rule.get("direction", "up")
         if direction not in {"up", "down"}:
             raise StrategyValidationError(f"MACD direction must be up or down (rule {index + 1})")
+
+    if rtype == "indicator_cross":
+        direction = rule.get("direction", "up")
+        if direction not in {"up", "down"}:
+            raise StrategyValidationError(f"Cross direction must be up or down (rule {index + 1})")
+        if not rule.get("left") or not rule.get("right"):
+            raise StrategyValidationError(f"Cross rule {index + 1} needs left and right operands")
 
     if rtype == "price_at_bb":
         band = rule.get("band", "lower")
