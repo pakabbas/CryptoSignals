@@ -352,7 +352,7 @@ class StrategyEvaluator:
         name = str(node.get("name", "")).upper()
         if name in {"VOLUME", "CLOSE"}:
             return []
-        if name in {"STOCHRSIk", "STOCHRSID", "STOCHRSI"}:
+        if name in {"STOCHRSIK", "STOCHRSID", "STOCHRSI"}:
             return [
                 {
                     "name": "STOCHRSI",
