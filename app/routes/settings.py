@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 
+from app.config.timeframes import SUPPORTED_TIMEFRAMES, normalize_timeframe, timeframe_label
 from app.exchanges.registry import list_supported_exchanges
 from app.services.config_backup_service import ConfigBackupService
 from app.services.email_service import EmailService
@@ -35,7 +36,9 @@ def general():
                 "timezone": request.form.get("timezone", "UTC").strip(),
                 "exchange": request.form.get("exchange", "binance").strip(),
                 "scanner_interval_seconds": request.form.get("scanner_interval_seconds", "60").strip(),
-                "default_timeframe": request.form.get("default_timeframe", "1H").strip(),
+                "default_timeframe": normalize_timeframe(
+                    request.form.get("default_timeframe", "1H")
+                ),
                 "theme": request.form.get("theme", "light").strip(),
                 "debug_mode": "true" if request.form.get("debug_mode") == "on" else "false",
             }
@@ -45,7 +48,13 @@ def general():
 
     settings = service.get_all()
     exchanges = list_supported_exchanges()
-    return render_template("settings/general.html", settings=settings, exchanges=exchanges)
+    return render_template(
+        "settings/general.html",
+        settings=settings,
+        exchanges=exchanges,
+        timeframes=SUPPORTED_TIMEFRAMES,
+        timeframe_labels=timeframe_label,
+    )
 
 
 @settings_bp.route("/smtp", methods=["GET", "POST"])

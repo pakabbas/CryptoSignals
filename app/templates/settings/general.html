@@ -25,10 +25,10 @@
       <input type="number" min="15" name="scanner_interval_seconds" class="form-control" value="{{ settings.scanner_interval_seconds }}">
     </div>
     <div class="col-md-6">
-      <label class="form-label">Default timeframe</label>
+      <label class="form-label">Default candle timeframe</label>
       <select name="default_timeframe" class="form-select">
-        {% for tf in ['1m','5m','15m','30m','1H','4H','1D'] %}
-          <option value="{{ tf }}" {% if settings.default_timeframe == tf %}selected{% endif %}>{{ tf }}</option>
+        {% for tf in timeframes %}
+          <option value="{{ tf }}" {% if settings.default_timeframe == tf or settings.default_timeframe|lower == tf|lower %}selected{% endif %}>{{ timeframe_labels(tf) }}</option>
         {% endfor %}
       </select>
     </div>

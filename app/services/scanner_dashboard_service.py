@@ -62,12 +62,16 @@ class ScannerDashboardService:
         self.strategies = StrategyService()
         self.settings = SettingsService()
 
-    def build(self) -> tuple[list[CoinTicker], list[StrategyLiveView]]:
+    def build(self, market_timeframe: str | None = None) -> tuple[list[CoinTicker], list[StrategyLiveView]]:
         if os.getenv("TESTING", "").lower() in {"1", "true", "yes"}:
             return [], []
 
         now = datetime.now(timezone.utc)
-        default_tf = self.settings.get("default_timeframe", "1H")
+        from app.config.timeframes import normalize_timeframe
+
+        default_tf = normalize_timeframe(
+            market_timeframe or self.settings.get("default_timeframe", "1H")
+        )
         enabled_coins = [c for c in self.coins.list_coins() if c.enabled]
         ohlcv_cache: dict[tuple[int, str], pd.DataFrame] = {}
 

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-TIMEFRAMES = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"]
+from app.config.timeframes import SUPPORTED_TIMEFRAMES
+
+TIMEFRAMES = list(SUPPORTED_TIMEFRAMES)
 
 LOGIC_OPS = ["AND", "OR", "NOT"]
 

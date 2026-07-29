@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
+from app.config.timeframes import SUPPORTED_TIMEFRAMES, normalize_timeframe, timeframe_label
 from app.scanner.scanner_service import ScannerService
 from app.services.coin_service import CoinService
 from app.services.scanner_dashboard_service import ScannerDashboardService
@@ -12,13 +13,20 @@ from app.services.strategy_service import StrategyService
 scanner_bp = Blueprint("scanner", __name__, url_prefix="/scanner")
 
 
+def _display_timeframe() -> str:
+    settings = SettingsService().get_all()
+    default = normalize_timeframe(settings.get("default_timeframe", "1H"))
+    return normalize_timeframe(request.args.get("tf", default))
+
+
 def _scanner_context():
     settings = SettingsService().get_all()
     runtime = SettingsService().runtime_config()
     runtime["scanner_status"] = settings.get("scanner_status", "unknown")
     runtime["last_scan_time"] = settings.get("last_scan_time", "—")
+    display_tf = _display_timeframe()
     dashboard = ScannerDashboardService()
-    tickers, live_views = dashboard.build()
+    tickers, live_views = dashboard.build(market_timeframe=display_tf)
     return {
         "runtime": runtime,
         "coins": [c for c in CoinService().list_coins() if c.enabled],
@@ -27,6 +35,9 @@ def _scanner_context():
         "tickers": tickers,
         "live_views": live_views,
         "side_progress": ScannerDashboardService.side_progress,
+        "display_timeframe": display_tf,
+        "timeframes": SUPPORTED_TIMEFRAMES,
+        "timeframe_label": timeframe_label,
     }
 
 
@@ -37,8 +48,9 @@ def index():
 
 @scanner_bp.route("/live.json")
 def live_json():
+    display_tf = _display_timeframe()
     dashboard = ScannerDashboardService()
-    tickers, live_views = dashboard.build()
+    tickers, live_views = dashboard.build(market_timeframe=display_tf)
     progress = ScannerDashboardService.side_progress
 
     def side_payload(side):
@@ -89,4 +101,4 @@ def run_now():
         f"Scan complete: {stats['signals']} new signal(s), {stats['errors']} error(s).",
         "success" if stats["errors"] == 0 else "warning",
     )
-    return redirect(url_for("scanner.index"))
+    return redirect(url_for("scanner.index", tf=request.args.get("tf")))

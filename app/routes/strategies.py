@@ -12,6 +12,7 @@ from flask import (
     url_for,
 )
 
+from app.config.timeframes import normalize_timeframe, timeframe_label
 from app.models import Coin
 from app.services.coin_service import CoinService
 from app.services.exchange_service import ExchangeService
@@ -63,7 +64,7 @@ def create():
             service.create(
                 name=request.form.get("name", "").strip(),
                 description=request.form.get("description", "").strip() or None,
-                timeframe=request.form.get("timeframe", "1H"),
+                timeframe=normalize_timeframe(request.form.get("timeframe", "1H")),
                 definition_json=definition,
                 enabled=request.form.get("enabled") == "on",
                 coin_ids=_coin_ids_from_form(),
@@ -86,6 +87,7 @@ def create():
         operators=OPERATORS,
         logic_ops=LOGIC_OPS,
         timeframes=TIMEFRAMES,
+        timeframe_label=timeframe_label,
     )
 
 
@@ -103,7 +105,7 @@ def edit(strategy_id: int):
                 strategy_id,
                 name=request.form.get("name", "").strip(),
                 description=request.form.get("description", "").strip() or None,
-                timeframe=request.form.get("timeframe", "1H"),
+                timeframe=normalize_timeframe(request.form.get("timeframe", "1H")),
                 definition_json=definition,
                 enabled=request.form.get("enabled") == "on",
                 coin_ids=_coin_ids_from_form(),
@@ -126,6 +128,7 @@ def edit(strategy_id: int):
         operators=OPERATORS,
         logic_ops=LOGIC_OPS,
         timeframes=TIMEFRAMES,
+        timeframe_label=timeframe_label,
     )
 
 
@@ -189,7 +192,7 @@ def preview():
     try:
         definition = _parse_definition_from_form()
         symbol = request.form.get("preview_symbol", "BTC/USDT")
-        timeframe = request.form.get("timeframe", "1H")
+        timeframe = normalize_timeframe(request.form.get("timeframe", "1H"))
         df = ExchangeService().fetch_ohlcv_dataframe(symbol, timeframe, limit=300)
         result = StrategyEvaluator().evaluate(df, definition, timeframe)
         message = (

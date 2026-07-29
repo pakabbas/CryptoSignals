@@ -19,7 +19,7 @@
         <label class="form-label">Timeframe</label>
         <select name="timeframe" class="form-select">
           {% for tf in timeframes %}
-            <option value="{{ tf }}" {% if (strategy and strategy.timeframe == tf) or (not strategy and tf == '1H') %}selected{% endif %}>{{ tf }}</option>
+            <option value="{{ tf }}" {% if (strategy and strategy.timeframe == tf) or (not strategy and tf == '1H') %}selected{% endif %}>{{ timeframe_label(tf) }}</option>
           {% endfor %}
         </select>
       </div>

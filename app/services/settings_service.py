@@ -5,6 +5,7 @@ from typing import Any
 from flask import current_app
 
 from app.config.settings import Config
+from app.config.timeframes import normalize_timeframe
 from app.database import db
 from app.models import AppSetting, SmtpSetting
 from app.services.base import BaseService
@@ -102,7 +103,9 @@ class SettingsService(BaseService[AppSetting]):
             "scanner_interval_seconds": int(
                 settings.get("scanner_interval_seconds", Config.SCANNER_INTERVAL_SECONDS)
             ),
-            "default_timeframe": settings.get("default_timeframe", Config.DEFAULT_TIMEFRAME),
+            "default_timeframe": normalize_timeframe(
+                settings.get("default_timeframe", Config.DEFAULT_TIMEFRAME)
+            ),
             "theme": settings.get("theme", Config.THEME),
             "debug_mode": settings.get("debug_mode", "false").lower() == "true",
             "primary_symbol": current_app.config.get("PRIMARY_SYMBOL", Config.PRIMARY_SYMBOL),
