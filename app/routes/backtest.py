@@ -17,8 +17,8 @@ def index():
     return render_template(
         "backtest/index.html",
         results=service.list_recent_summaries(30),
-        strategies=StrategyService().list_all(),
-        coins=CoinService().list_coins(),
+        strategies=StrategyService().list_enabled(),
+        coins=[c for c in CoinService().list_coins() if c.enabled],
         periods=BACKTEST_PERIODS_DAYS,
     )
 
