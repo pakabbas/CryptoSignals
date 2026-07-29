@@ -16,5 +16,14 @@ class Signal(TimestampMixin, db.Model):
     candle_time = db.Column(db.DateTime(timezone=True), nullable=False)
     notified = db.Column(db.Boolean, nullable=False, default=False)
 
+    # Outcome vs fixed % SL / TP from entry
+    status = db.Column(db.String(16), nullable=False, default="open")  # open | profit | loss
+    stop_loss = db.Column(db.Numeric(20, 8), nullable=True)
+    take_profit = db.Column(db.Numeric(20, 8), nullable=True)
+    exit_price = db.Column(db.Numeric(20, 8), nullable=True)
+    exit_time = db.Column(db.DateTime(timezone=True), nullable=True)
+    pnl_pct = db.Column(db.Numeric(12, 4), nullable=True)
+    checked_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
     coin = db.relationship("Coin", backref=db.backref("signals", lazy=True))
     strategy = db.relationship("Strategy", backref=db.backref("signals", lazy=True))
