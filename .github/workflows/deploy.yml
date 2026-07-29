@@ -72,7 +72,7 @@ jobs:
           {
             echo "FLASK_ENV=production"
             echo "SECRET_KEY=${SECRET_KEY:-change-me-in-production}"
-            echo "MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}"
+            echo "MYSQL_HOST=${MYSQL_HOST:-localhost}"
             echo "MYSQL_PORT=${MYSQL_PORT:-3306}"
             echo "MYSQL_USER=${MYSQL_USER:-leadpilot}"
             echo "MYSQL_PASSWORD=${MYSQL_PASSWORD:-}"

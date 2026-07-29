@@ -30,7 +30,7 @@ The app also attempts `CREATE DATABASE IF NOT EXISTS` on startup when the MySQL 
 
 | Secret | Example value |
 |--------|----------------|
-| `MYSQL_HOST` | `127.0.0.1` |
+| `MYSQL_HOST` | `localhost` |
 | `MYSQL_PORT` | `3306` |
 | `MYSQL_USER` | `leadpilot` |
 | `MYSQL_PASSWORD` | *(your MySQL password)* |
