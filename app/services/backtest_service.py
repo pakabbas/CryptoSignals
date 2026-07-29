@@ -112,6 +112,9 @@ class BacktestService(BaseService[BacktestResult]):
                 SELECT br.id, br.created_at, br.period_days, br.timeframe,
                        JSON_UNQUOTE(JSON_EXTRACT(br.metrics_json, '$.return_pct')) AS return_pct,
                        JSON_UNQUOTE(JSON_EXTRACT(br.metrics_json, '$.win_rate')) AS win_rate,
+                       JSON_UNQUOTE(JSON_EXTRACT(br.metrics_json, '$.total_trades')) AS total_trades,
+                       JSON_UNQUOTE(JSON_EXTRACT(br.metrics_json, '$.winning_trades')) AS winning_trades,
+                       JSON_UNQUOTE(JSON_EXTRACT(br.metrics_json, '$.losing_trades')) AS losing_trades,
                        s.name AS strategy_name, c.symbol AS coin_symbol
                 FROM backtest_results br
                 INNER JOIN strategies s ON s.id = br.strategy_id
@@ -126,6 +129,9 @@ class BacktestService(BaseService[BacktestResult]):
                 SELECT br.id, br.created_at, br.period_days, br.timeframe,
                        json_extract(br.metrics_json, '$.return_pct') AS return_pct,
                        json_extract(br.metrics_json, '$.win_rate') AS win_rate,
+                       json_extract(br.metrics_json, '$.total_trades') AS total_trades,
+                       json_extract(br.metrics_json, '$.winning_trades') AS winning_trades,
+                       json_extract(br.metrics_json, '$.losing_trades') AS losing_trades,
                        s.name AS strategy_name, c.symbol AS coin_symbol
                 FROM backtest_results br
                 INNER JOIN strategies s ON s.id = br.strategy_id
@@ -145,6 +151,15 @@ class BacktestService(BaseService[BacktestResult]):
                         item[key] = float(val)
                     except (TypeError, ValueError):
                         item[key] = 0.0
+            for key in ("total_trades", "winning_trades", "losing_trades"):
+                val = item.get(key)
+                if val is None:
+                    item[key] = 0
+                elif not isinstance(val, int):
+                    try:
+                        item[key] = int(float(val))
+                    except (TypeError, ValueError):
+                        item[key] = 0
             summaries.append(item)
         return summaries
 

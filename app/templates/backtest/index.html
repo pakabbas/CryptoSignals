@@ -54,8 +54,11 @@
           <th>Strategy</th>
           <th>Coin</th>
           <th>Period</th>
-          <th>Return %</th>
-          <th>Win rate</th>
+          <th class="text-end">Trades</th>
+          <th class="text-end">Wins</th>
+          <th class="text-end">Losses</th>
+          <th class="text-end">Return %</th>
+          <th class="text-end">Win rate</th>
           <th></th>
         </tr>
       </thead>
@@ -66,12 +69,15 @@
             <td>{{ r.strategy_name }}</td>
             <td>{{ r.coin_symbol }}</td>
             <td>{{ r.period_days }}d · {{ r.timeframe }}</td>
-            <td>{{ r.return_pct if r.return_pct is not none else '—' }}</td>
-            <td>{{ '%.1f'|format(r.win_rate or 0) }}%</td>
+            <td class="text-end fw-semibold">{{ r.total_trades if r.total_trades is not none else 0 }}</td>
+            <td class="text-end">{{ r.winning_trades if r.winning_trades is not none else 0 }}</td>
+            <td class="text-end">{{ r.losing_trades if r.losing_trades is not none else 0 }}</td>
+            <td class="text-end">{{ '%.2f'|format(r.return_pct or 0) }}</td>
+            <td class="text-end">{{ '%.1f'|format(r.win_rate or 0) }}%</td>
             <td><a href="{{ url_for('backtest.show', result_id=r.id) }}">Report</a></td>
           </tr>
         {% else %}
-          <tr><td colspan="7" class="text-secondary p-4">No backtests yet.</td></tr>
+          <tr><td colspan="10" class="text-secondary p-4">No backtests yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>
