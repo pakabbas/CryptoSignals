@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from app.scanner.candle_utils import TIMEFRAME_SECONDS, to_ccxt_timeframe
 from app.services.candle_service import CandleService
-from app.services.exchange_service import ExchangeService, OhlcvBar
+from app.services.exchange_service import OhlcvBar, exchange_service_for_settings
 from app.utils.logging_setup import get_logger
 
 logger = get_logger("scanner")
@@ -16,7 +16,9 @@ WARMUP_BARS = 250
 
 class HistoricalDownloadService:
     def __init__(self) -> None:
-        self.exchange = ExchangeService()
+        from app.services.exchange_service import exchange_service_for_settings
+
+        self.exchange = exchange_service_for_settings()
         self.candles = CandleService()
 
     def download_and_store(

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 
+from app.exchanges.registry import list_supported_exchanges
+from app.services.config_backup_service import ConfigBackupService
 from app.services.email_service import EmailService
 from app.services.settings_service import SettingsService
 
@@ -26,7 +28,8 @@ def general():
         return redirect(url_for("settings.general"))
 
     settings = service.get_all()
-    return render_template("settings/general.html", settings=settings)
+    exchanges = list_supported_exchanges()
+    return render_template("settings/general.html", settings=settings, exchanges=exchanges)
 
 
 @settings_bp.route("/smtp", methods=["GET", "POST"])
@@ -68,3 +71,37 @@ def smtp_test():
     except Exception as exc:
         flash(f"Test email failed: {exc}", "danger")
     return redirect(url_for("settings.smtp"))
+
+
+@settings_bp.route("/backup", methods=["GET", "POST"])
+def backup():
+    service = ConfigBackupService()
+    if request.method == "POST" and request.form.get("action") == "import":
+        raw = request.form.get("backup_json", "").strip()
+        if not raw and "backup_file" in request.files:
+            file = request.files["backup_file"]
+            raw = file.read().decode("utf-8", errors="replace").strip()
+        smtp_password = request.form.get("smtp_password", "").strip() or None
+        try:
+            stats = service.import_json(raw, smtp_password=smtp_password)
+            flash(
+                f"Import complete: {stats['settings']} settings, "
+                f"{stats['strategies']} strategies, {stats['coins']} coins.",
+                "success",
+            )
+        except Exception as exc:
+            flash(f"Import failed: {exc}", "danger")
+        return redirect(url_for("settings.backup"))
+
+    preview = service.export_payload()
+    return render_template("settings/backup.html", preview=preview)
+
+
+@settings_bp.route("/backup/download")
+def backup_download():
+    payload = ConfigBackupService().export_json()
+    return Response(
+        payload,
+        mimetype="application/json",
+        headers={"Content-Disposition": "attachment; filename=cryptosignals-backup.json"},
+    )

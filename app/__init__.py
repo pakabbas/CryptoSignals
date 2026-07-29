@@ -11,6 +11,7 @@ from app.database import db
 from app.database.bootstrap import ensure_database_exists
 from app.database.migrate import apply_schema_patches
 from app.routes import (
+    api_bp,
     backtest_bp,
     coins_bp,
     dashboard_bp,
@@ -25,6 +26,7 @@ from app.services.coin_service import CoinService
 from app.services.scheduler_service import SchedulerService
 from app.services.settings_service import SettingsService
 from app.services.strategy_service import StrategyService
+from app.middleware.http import register_error_handlers, register_request_hooks
 from app.utils.logging_setup import setup_logging
 
 
@@ -51,6 +53,18 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(signals_bp)
     app.register_blueprint(strategies_bp)
     app.register_blueprint(backtest_bp)
+    app.register_blueprint(api_bp)
+
+    register_error_handlers(app)
+    register_request_hooks(app)
+
+    @app.context_processor
+    def inject_theme():
+        try:
+            theme = SettingsService().get("theme", "light")
+        except Exception:
+            theme = "light"
+        return {"settings_theme": theme}
 
     testing = app.config.get("TESTING") or os.getenv("TESTING", "").lower() in {
         "1",

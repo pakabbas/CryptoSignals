@@ -46,6 +46,9 @@ class IndicatorRegistry:
         params = params or {}
         return self._computers[key](df, params)
 
+    def names(self) -> list[str]:
+        return sorted(self._computers.keys())
+
     def _register_builtins(self) -> None:
         self.register("EMA", self._ema)
         self.register("SMA", self._sma)

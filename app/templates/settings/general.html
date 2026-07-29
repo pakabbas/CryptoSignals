@@ -10,8 +10,12 @@
     </div>
     <div class="col-md-6">
       <label class="form-label">Exchange</label>
-      <input type="text" name="exchange" class="form-control" value="{{ settings.exchange }}" readonly>
-      <div class="form-text">Binance for Step 1 / BTC-USDT.</div>
+      <select name="exchange" class="form-select">
+        {% for ex in exchanges %}
+          <option value="{{ ex.id }}" {% if settings.exchange == ex.id %}selected{% endif %}>{{ ex.label }}</option>
+        {% endfor %}
+      </select>
+      <div class="form-text">OHLCV source via CCXT (read-only).</div>
     </div>
     <div class="col-md-6">
       <label class="form-label">Scanner interval (seconds)</label>
@@ -38,8 +42,9 @@
         <label class="form-check-label" for="debug_mode">Debug mode</label>
       </div>
     </div>
-    <div class="col-12">
+    <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
       <button type="submit" class="btn btn-primary">Save settings</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('settings.backup') }}">Backup &amp; restore</a>
     </div>
   </div>
 </form>

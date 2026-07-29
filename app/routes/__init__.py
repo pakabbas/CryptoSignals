@@ -1,3 +1,4 @@
+from app.routes.api import api_bp
 from app.routes.backtest import backtest_bp
 from app.routes.coins import coins_bp
 from app.routes.dashboard import dashboard_bp
@@ -9,6 +10,7 @@ from app.routes.signals import signals_bp
 from app.routes.strategies import strategies_bp
 
 __all__ = [
+    "api_bp",
     "backtest_bp",
     "coins_bp",
     "dashboard_bp",

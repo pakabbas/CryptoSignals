@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from app.models import Coin, Strategy
 from app.services.candle_service import CandleService
 from app.services.coin_service import CoinService
-from app.services.exchange_service import ExchangeService
+from app.services.exchange_service import ExchangeService, exchange_service_for_settings
 from app.services.settings_service import SettingsService
 from app.services.signal_service import SignalService
 from app.services.strategy_service import StrategyService
@@ -19,13 +19,19 @@ class ScannerService:
     """Fetch candles, evaluate strategies, emit signals (BTC/USDT focus)."""
 
     def __init__(self) -> None:
-        self.exchange = ExchangeService()
+        self._exchange: ExchangeService | None = None
         self.candles = CandleService()
         self.coins = CoinService()
         self.strategies = StrategyService()
         self.signals = SignalService()
         self.evaluator = StrategyEvaluator()
         self.settings = SettingsService()
+
+    @property
+    def exchange(self) -> ExchangeService:
+        if self._exchange is None:
+            self._exchange = exchange_service_for_settings()
+        return self._exchange
 
     def run_scan(self) -> dict[str, int]:
         stats = {"coins": 0, "strategies": 0, "signals": 0, "errors": 0}

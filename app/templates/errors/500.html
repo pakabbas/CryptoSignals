@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Error · Crypto Signal Bot{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="display-6">Something went wrong</h1>
+  <p class="lead text-secondary">{{ message | default('An unexpected error occurred. Check logs for details.') }}</p>
+  <a class="btn btn-primary" href="{{ url_for('dashboard.index') }}">Back to dashboard</a>
+</div>
+{% endblock %}

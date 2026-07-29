@@ -47,6 +47,18 @@ python run.py
 
 Open [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 
+## Step 5 includes
+
+- In-memory TTL cache for OHLCV fetches
+- Multi-exchange CCXT registry (Binance default; selectable in Settings)
+- Global error pages and request ID logging (`X-Request-Id`)
+- Configuration backup/restore (Settings → Backup & restore)
+- REST API foundation at `/api/v1/` (optional `API_KEY`)
+- Plugin-style indicator registry catalog via API
+- Docker (`Dockerfile`, `docker-compose.yml`)
+- CI pytest workflow, `docs/DEPLOYMENT.md`, `docs/SECURITY.md`
+- UI polish (footer, responsive tweaks, theme context)
+
 ## Step 4 includes
 
 - Historical OHLCV downloader (7–365 days) into `historical_candles`
@@ -90,6 +102,11 @@ app/
   models/          ORM models
   routes/          Flask blueprints
   services/        Business logic
+  exchanges/       CCXT exchange registry
+  middleware/      HTTP error handlers and request hooks
+  backtester/      Backtest engine
+  utils/           Cache, API auth, logging
+docs/              Deployment and security guides
   templates/       Bootstrap UI
   static/          CSS/JS
 logs/              Runtime log files
