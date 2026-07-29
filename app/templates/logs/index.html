@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Logs · Crypto Signal Bot{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Application logs</h1>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-auto">
+    <select name="category" class="form-select">
+      <option value="">All categories</option>
+      {% for cat in ['app','scanner','strategy','email'] %}
+        <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-primary" type="submit">Filter</button>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="card-body table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr><th>Time</th><th>Category</th><th>Level</th><th>Message</th></tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+          <tr>
+            <td class="text-nowrap">{{ entry.created_at }}</td>
+            <td>{{ entry.category }}</td>
+            <td>{{ entry.level }}</td>
+            <td class="small">{{ entry.message }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4" class="text-secondary">No log entries.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

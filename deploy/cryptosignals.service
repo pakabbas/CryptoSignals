@@ -1,0 +1,16 @@
+[Unit]
+Description=CryptoSignals Flask application
+After=network.target
+
+[Service]
+Type=simple
+User=APP_USER
+Group=www-data
+WorkingDirectory=/var/www/cryptosignals
+EnvironmentFile=-/var/www/cryptosignals/.env
+ExecStart=/var/www/cryptosignals/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5000 --timeout 120 run:app
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

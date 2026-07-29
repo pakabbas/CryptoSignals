@@ -32,14 +32,20 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             'sudo mkdir -p /var/www/cryptosignals && sudo chown -R "$USER":www-data /var/www/cryptosignals && sudo chmod -R 775 /var/www/cryptosignals'
 
-      - name: Sync site files
+      - name: Sync application files
         env:
           SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
           SSH_USER: ${{ secrets.GCP_SSH_USER }}
         run: |
           rsync -avz --delete \
+            --exclude '.git' \
+            --exclude '.venv' \
+            --exclude '__pycache__' \
+            --exclude '*.pyc' \
+            --exclude '.env' \
+            --exclude 'logs/*.log' \
             -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes" \
-            ./public/ \
+            ./ \
             "$SSH_USER@$SSH_HOST:/var/www/cryptosignals/"
 
       - name: Upload nginx config and run setup
@@ -53,14 +59,17 @@ jobs:
           scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
             deploy/remote-setup.sh \
             "$SSH_USER@$SSH_HOST:/tmp/cryptosignals-remote-setup.sh"
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            deploy/post-deploy.sh \
+            "$SSH_USER@$SSH_HOST:/tmp/cryptosignals-post-deploy.sh"
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
             "$SSH_USER@$SSH_HOST" \
-            'bash /tmp/cryptosignals-remote-setup.sh'
+            'chmod +x /var/www/cryptosignals/deploy/*.sh 2>/dev/null || true; bash /tmp/cryptosignals-remote-setup.sh'
 
       - name: Health check
         run: |
-          sleep 3
-          curl -4 -fsSL --retry 5 --retry-delay 2 \
+          sleep 8
+          curl -4 -fsSL --retry 8 --retry-delay 3 \
             -A "CryptoSignals-Deploy-Check" \
             "http://cryptosignals.btkdeals.com/" | grep -q "CryptoSignals"
           echo "Health check passed"

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}General Settings · Crypto Signal Bot{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">General settings</h1>
+<form method="post" class="card shadow-sm">
+  <div class="card-body row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Timezone</label>
+      <input type="text" name="timezone" class="form-control" value="{{ settings.timezone }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Exchange</label>
+      <input type="text" name="exchange" class="form-control" value="{{ settings.exchange }}" readonly>
+      <div class="form-text">Binance for Step 1 / BTC-USDT.</div>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Scanner interval (seconds)</label>
+      <input type="number" min="15" name="scanner_interval_seconds" class="form-control" value="{{ settings.scanner_interval_seconds }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Default timeframe</label>
+      <select name="default_timeframe" class="form-select">
+        {% for tf in ['1m','5m','15m','30m','1H','4H','1D'] %}
+          <option value="{{ tf }}" {% if settings.default_timeframe == tf %}selected{% endif %}>{{ tf }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Theme</label>
+      <select name="theme" class="form-select">
+        <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>Light</option>
+        <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>Dark</option>
+      </select>
+    </div>
+    <div class="col-md-6 d-flex align-items-end">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="debug_mode" id="debug_mode" {% if settings.debug_mode == 'true' %}checked{% endif %}>
+        <label class="form-check-label" for="debug_mode">Debug mode</label>
+      </div>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Save settings</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

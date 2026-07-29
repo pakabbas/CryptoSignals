@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Crypto Signal Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Dashboard</h1>
+    <p class="text-secondary mb-0">Live overview for <strong>{{ runtime.primary_symbol }}</strong></p>
+  </div>
+  <span class="badge text-bg-secondary">Step 1 foundation</span>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="text-secondary small">Scanner status</div>
+        <div class="fs-5 fw-semibold">{{ runtime.scanner_status }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="text-secondary small">Last scan</div>
+        <div class="fs-6 fw-semibold">{{ runtime.last_scan_time or '—' }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="text-secondary small">Exchange</div>
+        <div class="fs-5 fw-semibold text-capitalize">{{ runtime.exchange }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="text-secondary small">Default timeframe</div>
+        <div class="fs-5 fw-semibold">{{ runtime.default_timeframe }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-transparent fw-semibold">Coins monitored</div>
+      <div class="card-body">
+        {% if enabled_coins %}
+          <ul class="list-group list-group-flush">
+            {% for coin in enabled_coins %}
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <span>{{ coin.symbol }}</span>
+                <span class="badge text-bg-success">Enabled</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-secondary mb-0">No enabled coins. Enable BTC/USDT on the coin page.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-transparent fw-semibold">Running strategies</div>
+      <div class="card-body">
+        {% if running_strategies %}
+          <ul class="list-group list-group-flush">
+            {% for strategy in running_strategies %}
+              <li class="list-group-item px-0">{{ strategy.name }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-secondary mb-0">No active strategies yet (Step 3).</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-transparent fw-semibold">Last signals</div>
+      <div class="card-body">
+        {% if recent_signals %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead><tr><th>Type</th><th>TF</th><th>Price</th><th>Time</th></tr></thead>
+              <tbody>
+                {% for signal in recent_signals %}
+                  <tr>
+                    <td>{{ signal.signal_type }}</td>
+                    <td>{{ signal.timeframe }}</td>
+                    <td>{{ signal.price }}</td>
+                    <td>{{ signal.candle_time }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">No signals yet (Step 2).</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-transparent fw-semibold">Recent alerts / logs</div>
+      <div class="card-body">
+        {% if recent_logs %}
+          <ul class="list-group list-group-flush">
+            {% for entry in recent_logs %}
+              <li class="list-group-item px-0 small">
+                <span class="badge text-bg-light text-dark me-1">{{ entry.category }}</span>
+                <span class="text-secondary">{{ entry.level }}</span> — {{ entry.message }}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-secondary mb-0">No log entries yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

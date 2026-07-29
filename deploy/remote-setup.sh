@@ -25,4 +25,6 @@ else
   sudo systemctl reload nginx
 fi
 
+bash "$APP_DIR/deploy/post-deploy.sh" || bash /tmp/cryptosignals-post-deploy.sh
+
 echo "Remote setup complete for $DOMAIN"

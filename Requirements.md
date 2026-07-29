@@ -38,8 +38,8 @@ Backend
 - Jinja2
 
 Database
-- SQLite (initial)
-- PostgreSQL (future)
+- MySQL (primary — already available on GCP)
+- SQLAlchemy with PyMySQL / mysqlclient driver
 
 Frontend
 - HTML
@@ -56,8 +56,9 @@ Charts
 - TradingView Lightweight Charts (optional)
 
 Deployment
-- Windows
+- Windows (local / XAMPP)
 - Linux
+- Google Cloud Platform (GCP) — MySQL already installed
 - Docker (future)
 
 ---
@@ -475,7 +476,19 @@ Debug mode
 
 ---
 
-# Database Tables
+# Database
+
+Engine: MySQL
+
+Connection configured via environment / settings (host, port, database name, user, password).
+
+Use SQLAlchemy ORM; connection string example:
+
+mysql+pymysql://user:password@host:3306/crypto_signals
+
+Create a dedicated database (e.g. `crypto_signals`) on the existing GCP MySQL instance.
+
+## Database Tables
 
 coins
 
@@ -618,8 +631,8 @@ Tasks
 
 - Initialise Flask project
 - Configure project structure
-- Database setup
-- SQLAlchemy models
+- MySQL database setup (connect to existing GCP MySQL)
+- SQLAlchemy models (MySQL-compatible types)
 - Settings management
 - Logging system
 - Basic Bootstrap UI
