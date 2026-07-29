@@ -1,0 +1,233 @@
+CryptoSignals — Database Reference (db.txt)
+============================================
+Source: Requirements.md + SQLAlchemy models (Step 1)
+Last updated: 2026-07-29
+
+================================================================================
+CONNECTION (production GCP VM)
+================================================================================
+Engine:        MySQL 8.x (MariaDB-compatible drivers via PyMySQL)
+Database name: crypto_signals
+Charset:       utf8mb4 / utf8mb4_unicode_ci
+
+Host:          localhost (app and MySQL on same VM)
+Port:          3306
+User:          leadpilot  (shared VM user; separate from LeadPilot app DB)
+Password:      see .env / GitHub secret MYSQL_PASSWORD (not stored in this file)
+
+Connection URL pattern (password must be URL-encoded if it contains @, #, etc.):
+  mysql+pymysql://leadpilot:<encoded_password>@localhost:3306/crypto_signals?charset=utf8mb4
+
+Environment variables (.env):
+  MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+
+Init script (one-time, as MySQL admin):
+  deploy/init-database.sql
+
+Tables are created/updated by SQLAlchemy on app startup:
+  db.create_all()
+
+================================================================================
+SCOPE (current phase)
+================================================================================
+Primary trading pair: BTC/USDT (seeded in coins on first successful boot)
+Other tables exist for Steps 2–5; most rows empty until those features run.
+
+================================================================================
+TABLE: coins
+================================================================================
+Purpose: Monitored trading pairs (coin management).
+
+Column          Type              Null  Default    Notes
+--------------  ----------------  ----  ---------  ---------------------------
+id              INT               NO    PK AI
+symbol          VARCHAR(32)       NO    —          UNIQUE, indexed (e.g. BTC/USDT)
+exchange        VARCHAR(32)       NO    binance
+enabled         TINYINT(1)        NO    1          Monitor on/off
+group_name      VARCHAR(64)       YES   NULL       Optional grouping label
+created_at      DATETIME          NO    UTC now
+updated_at      DATETIME          NO    UTC now    Auto-updated
+
+Indexes: UNIQUE(symbol), INDEX(symbol)
+
+================================================================================
+TABLE: strategies
+================================================================================
+Purpose: User-defined signal strategies (Step 3+).
+
+Column            Type              Null  Default    Notes
+----------------  ----------------  ----  ---------  ---------------------------
+id                INT               NO    PK AI
+name              VARCHAR(128)      NO    —          UNIQUE
+description       TEXT              YES   NULL
+definition_json   JSON              NO    {}         Strategy rules (builder)
+enabled           TINYINT(1)        NO    0
+timeframe         VARCHAR(8)        NO    1H         1m, 5m, 15m, 30m, 1H, 4H, 1D
+created_at        DATETIME          NO    UTC now
+updated_at        DATETIME          NO    UTC now
+
+================================================================================
+TABLE: indicator_settings
+================================================================================
+Purpose: Per-strategy indicator parameters.
+
+Column            Type              Null  Default    Notes
+----------------  ----------------  ----  ---------  ---------------------------
+id                INT               NO    PK AI
+strategy_id       INT               NO    —          FK → strategies.id
+indicator_key     VARCHAR(64)       NO    —          e.g. RSI, MACD, EMA
+parameters_json   JSON              NO    {}         Periods, thresholds, etc.
+created_at        DATETIME          NO    UTC now
+updated_at        DATETIME          NO    UTC now
+
+Foreign keys: strategy_id → strategies(id)
+
+================================================================================
+TABLE: signals
+================================================================================
+Purpose: Generated BUY / SELL / alerts (Step 2+).
+
+Column          Type              Null  Default    Notes
+--------------  ----------------  ----  ---------  ---------------------------
+id              INT               NO    PK AI
+coin_id         INT               NO    —          FK → coins.id
+strategy_id     INT               YES   NULL       FK → strategies.id
+signal_type     VARCHAR(16)       NO    —          BUY, SELL, etc.
+timeframe       VARCHAR(8)        NO    —
+price           DECIMAL(20,8)     NO    —
+candle_time     DATETIME          NO    —          Candle close time (UTC)
+notified        TINYINT(1)        NO    0          Email sent flag
+created_at      DATETIME          NO    UTC now
+updated_at      DATETIME          NO    UTC now
+
+Foreign keys: coin_id → coins(id), strategy_id → strategies(id)
+
+================================================================================
+TABLE: backtest_results
+================================================================================
+Purpose: Strategy backtest runs and metrics (Step 4+).
+
+Column          Type              Null  Default    Notes
+--------------  ----------------  ----  ---------  ---------------------------
+id              INT               NO    PK AI
+strategy_id     INT               NO    —          FK → strategies.id
+coin_id         INT               NO    —          FK → coins.id
+timeframe       VARCHAR(8)        NO    —
+period_days     INT               NO    —          7, 30, 90, 180, 365, etc.
+metrics_json    JSON              NO    {}         Win rate, PF, drawdown, etc.
+created_at      DATETIME          NO    UTC now
+updated_at      DATETIME          NO    UTC now
+
+Foreign keys: strategy_id → strategies(id), coin_id → coins(id)
+
+================================================================================
+TABLE: smtp_settings
+================================================================================
+Purpose: Email alert configuration (single row typical).
+
+Column            Type              Null  Default    Notes
+----------------  ----------------  ----  ---------  ---------------------------
+id                INT               NO    PK AI
+smtp_server       VARCHAR(255)      NO    ''
+smtp_port         INT               NO    587
+username          VARCHAR(255)      NO    ''
+password          VARCHAR(255)      NO    ''         Stored in DB; restrict access
+use_tls           TINYINT(1)        NO    1
+use_ssl           TINYINT(1)        NO    0
+sender_email      VARCHAR(255)      NO    ''
+receiver_email    VARCHAR(255)      NO    ''
+subject_template  VARCHAR(255)      NO    Crypto Signal: {signal_type} {symbol}
+created_at        DATETIME          NO    UTC now
+updated_at        DATETIME          NO    UTC now
+
+================================================================================
+TABLE: app_settings
+================================================================================
+Purpose: Key-value application settings (general + scanner UI state).
+
+Column      Type          Null  Default    Notes
+----------  ------------  ----  ---------  ---------------------------
+id          INT           NO    PK AI
+key         VARCHAR(64)   NO    —          UNIQUE, indexed
+value       TEXT          NO    ''
+created_at  DATETIME      NO    UTC now
+updated_at  DATETIME      NO    UTC now
+
+Default keys inserted on first boot (app_settings.value):
+  timezone                  → UTC (configurable)
+  exchange                  → binance
+  scanner_interval_seconds  → 60
+  default_timeframe         → 1H
+  theme                     → light
+  debug_mode                → false
+  last_scan_time            → (empty until scanner runs)
+  scanner_status            → idle
+
+================================================================================
+TABLE: logs
+================================================================================
+Purpose: Application log lines mirrored from file logging.
+
+Column        Type          Null  Default    Notes
+------------  ------------  ----  ---------  ---------------------------
+id            INT           NO    PK AI
+category      VARCHAR(32)   NO    —          app | scanner | strategy | email
+level         VARCHAR(16)   NO    —          INFO, WARNING, ERROR, etc.
+message       TEXT          NO    —
+context_json  JSON          YES   NULL       logger, module, funcName
+created_at    DATETIME      NO    UTC now
+updated_at    DATETIME      NO    UTC now
+
+Indexes: INDEX(category), INDEX(level)
+
+================================================================================
+TABLE: historical_candles
+================================================================================
+Purpose: Stored OHLCV for backtest and scanner (Step 2+).
+
+Column      Type              Null  Default    Notes
+----------  ----------------  ----  ---------  ---------------------------
+id          BIGINT            NO    PK AI
+coin_id     INT               NO    —          FK → coins.id
+timeframe   VARCHAR(8)        NO    —
+open_time   DATETIME          NO    —          Candle open (UTC)
+open        DECIMAL(20,8)     NO    —
+high        DECIMAL(20,8)     NO    —
+low         DECIMAL(20,8)     NO    —
+close       DECIMAL(20,8)     NO    —
+volume      DECIMAL(24,8)     NO    —
+created_at  DATETIME          NO    UTC now
+updated_at  DATETIME          NO    UTC now
+
+Unique: (coin_id, timeframe, open_time) — name uq_candle_coin_tf_time
+Index:  (coin_id, timeframe, open_time) — name ix_candles_coin_tf_time
+
+Foreign keys: coin_id → coins(id)
+
+================================================================================
+RELATIONSHIPS (summary)
+================================================================================
+coins 1 — * signals
+coins 1 — * backtest_results
+coins 1 — * historical_candles
+
+strategies 1 — * indicator_settings
+strategies 1 — * signals
+strategies 1 — * backtest_results
+
+================================================================================
+SEED / EXPECTED DATA (Step 1)
+================================================================================
+coins: one row — symbol BTC/USDT, exchange binance, enabled=1, group_name primary
+
+app_settings: default keys above (if missing)
+
+smtp_settings: one empty template row (if missing)
+
+================================================================================
+NOTES
+================================================================================
+- LeadPilot project uses database `leadpilot`; CryptoSignals uses `crypto_signals` only.
+- Do not commit real passwords to git; use .env locally and GitHub Actions secrets in CI.
+- Schema changes: update SQLAlchemy models in app/models/ then redeploy; for production
+  migrations later consider Alembic (not yet in project).
