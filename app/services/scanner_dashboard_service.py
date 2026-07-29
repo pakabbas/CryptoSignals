@@ -86,7 +86,10 @@ class ScannerDashboardService:
         views.sort(
             key=lambda v: (
                 0 if v.signal_type else 1,
-                -(v.long.met_count + (v.short.met_count if v.short else 0)),
+                -(
+                    (v.long.met_count if v.long else 0)
+                    + (v.short.met_count if v.short else 0)
+                ),
                 v.strategy_name,
             )
         )
@@ -219,7 +222,7 @@ class ScannerDashboardService:
     @staticmethod
     def side_progress(side: SideStatus | None) -> dict[str, Any]:
         if not side or side.total == 0:
-            return {"met": 0, "total": 0, "pct": 0, "pending": 0}
+            return {"met": 0, "total": 0, "pct": 0, "pending": 0, "triggered": False, "logic": "AND"}
         pending = side.total - side.met_count
         pct = int(round(side.met_count / side.total * 100))
         return {

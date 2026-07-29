@@ -99,7 +99,7 @@ jobs:
             echo "TIMEZONE=UTC"
             echo "SCANNER_INTERVAL_SECONDS=60"
             echo "DEFAULT_TIMEFRAME=1H"
-            echo "EXCHANGE=binance"
+            echo "EXCHANGE=bybit"
             echo "LOG_LEVEL=INFO"
             echo "DEBUG_MODE=false"
             echo "ENABLE_SCHEDULER=true"
@@ -129,6 +129,15 @@ jobs:
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
             "$SSH_USER@$SSH_HOST" \
             'chmod +x /var/www/cryptosignals/deploy/*.sh 2>/dev/null || true; bash /tmp/cryptosignals-remote-setup.sh'
+
+      - name: Apply exchange setting (GCP: Binance geo-blocked)
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "/var/www/cryptosignals/.venv/bin/python /var/www/cryptosignals/deploy/apply_exchange_env.py"
 
       - name: Apply SMTP settings
         env:

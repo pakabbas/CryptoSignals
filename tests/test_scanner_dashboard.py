@@ -53,3 +53,37 @@ def test_next_candle_close_while_forming():
     open_time = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
     nxt = next_candle_close_utc(open_time, "1H", now=now)
     assert nxt == datetime(2026, 1, 1, 13, 0, tzinfo=timezone.utc)
+
+
+def test_dashboard_sort_with_failed_views():
+    from app.services.scanner_dashboard_service import ScannerDashboardService, StrategyLiveView
+
+    views = [
+        StrategyLiveView(
+            strategy_id=1,
+            strategy_name="A",
+            coin_symbol="BTC/USDT",
+            timeframe="1H",
+            enabled=True,
+            price=None,
+            signal_type=None,
+            long=None,
+            short=None,
+            next_close_at=None,
+            evaluated_at=None,
+            indicator_values={},
+            error="fetch failed",
+        )
+    ]
+    views.sort(
+        key=lambda v: (
+            0 if v.signal_type else 1,
+            -(
+                (v.long.met_count if v.long else 0)
+                + (v.short.met_count if v.short else 0)
+            ),
+            v.strategy_name,
+        )
+    )
+    assert views[0].strategy_name == "A"
+

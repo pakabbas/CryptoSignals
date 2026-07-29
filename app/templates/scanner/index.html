@@ -4,6 +4,14 @@
 {% block content %}
 <link href="{{ url_for('static', filename='css/scanner.css') }}" rel="stylesheet">
 
+{% set exchange_errors = tickers|selectattr('error')|list %}
+{% if exchange_errors and exchange_errors|length == tickers|length and tickers|length > 0 %}
+<div class="alert alert-warning border-0 shadow-sm">
+  <strong>Market data unavailable.</strong> The configured exchange rejected requests from this server (often Binance HTTP 451 on US cloud IPs).
+  Open <a href="{{ url_for('settings.general') }}">Settings</a> and switch exchange to <strong>Bybit</strong> or another provider, then refresh.
+</div>
+{% endif %}
+
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
   <div>
     <div class="d-flex align-items-center gap-2 mb-1">
