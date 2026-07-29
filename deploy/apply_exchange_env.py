@@ -14,8 +14,10 @@ load_dotenv(ROOT / ".env")
 
 def main() -> None:
     import pymysql
+    from datetime import datetime, timezone
 
     exchange = os.getenv("EXCHANGE", "bybit").strip().lower() or "bybit"
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     connection = pymysql.connect(
         host=os.getenv("MYSQL_HOST", "localhost"),
         port=int(os.getenv("MYSQL_PORT", "3306")),
@@ -27,13 +29,17 @@ def main() -> None:
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                """
-                INSERT INTO app_settings (`key`, value)
-                VALUES ('exchange', %s)
-                ON DUPLICATE KEY UPDATE value = VALUES(value)
-                """,
-                (exchange,),
+                "UPDATE app_settings SET value = %s, updated_at = %s WHERE `key` = 'exchange'",
+                (exchange, now),
             )
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """
+                    INSERT INTO app_settings (`key`, value, created_at, updated_at)
+                    VALUES ('exchange', %s, %s, %s)
+                    """,
+                    (exchange, now, now),
+                )
         connection.commit()
         print(f"Exchange set to {exchange} in app_settings")
     finally:
