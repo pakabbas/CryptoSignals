@@ -60,7 +60,13 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
     app.config["DB_READY"] = db_ready
 
-    if not testing:
+    enable_scheduler = os.getenv("ENABLE_SCHEDULER", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+    if not testing and enable_scheduler:
         scheduler_service.start()
         atexit.register(scheduler_service.stop)
 

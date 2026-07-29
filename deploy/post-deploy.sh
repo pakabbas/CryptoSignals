@@ -29,6 +29,14 @@ sudo cp "$TMP_SERVICE" "/etc/systemd/system/${SERVICE_NAME}.service"
 sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE_NAME"
 sudo systemctl restart "$SERVICE_NAME"
+sleep 2
+
+if ! curl -fsSL http://127.0.0.1:5000/health | grep -q CryptoSignals; then
+  echo "Gunicorn health check failed. Service status:"
+  sudo systemctl status "$SERVICE_NAME" --no-pager || true
+  sudo journalctl -u "$SERVICE_NAME" -n 40 --no-pager || true
+  exit 1
+fi
 
 sudo nginx -t
 sudo systemctl reload nginx
