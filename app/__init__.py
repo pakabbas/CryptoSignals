@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import atexit
+import logging
 import os
 
 from flask import Flask
@@ -8,7 +9,7 @@ from flask import Flask
 from app.config.settings import Config
 from app.database import db
 from app.database.bootstrap import ensure_database_exists
-from app.routes import coins_bp, dashboard_bp, logs_bp, settings_bp
+from app.routes import coins_bp, dashboard_bp, health_bp, logs_bp, settings_bp
 from app.services.coin_service import CoinService
 from app.services.scheduler_service import SchedulerService
 from app.services.settings_service import SettingsService
@@ -30,6 +31,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     scheduler_service.init_app(app)
 
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(health_bp)
     app.register_blueprint(coins_bp)
     app.register_blueprint(settings_bp)
     app.register_blueprint(logs_bp)
@@ -41,15 +43,22 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     }
 
     with app.app_context():
-        if not testing and app.config["SQLALCHEMY_DATABASE_URI"].startswith("mysql"):
-            try:
+        db_ready = True
+        try:
+            if not testing and app.config["SQLALCHEMY_DATABASE_URI"].startswith("mysql"):
                 ensure_database_exists()
-            except Exception as exc:
-                app.logger.warning("Could not auto-create database: %s", exc)
-        db.create_all()
-        setup_logging(app)
-        SettingsService().ensure_defaults()
-        CoinService().ensure_primary_coin()
+            db.create_all()
+            setup_logging(app)
+            SettingsService().ensure_defaults()
+            CoinService().ensure_primary_coin()
+        except Exception as exc:
+            db_ready = False
+            logging.getLogger(__name__).error("Database initialization failed: %s", exc)
+            if testing:
+                raise
+            setup_logging(app)
+
+    app.config["DB_READY"] = db_ready
 
     if not testing:
         scheduler_service.start()

@@ -48,6 +48,35 @@ jobs:
             ./ \
             "$SSH_USER@$SSH_HOST:/var/www/cryptosignals/"
 
+      - name: Write server environment file
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "cat > /var/www/cryptosignals/.env" <<EOF
+          FLASK_ENV=production
+          SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+          MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
+          MYSQL_PORT=${MYSQL_PORT:-3306}
+          MYSQL_USER=${MYSQL_USER:-root}
+          MYSQL_PASSWORD=${MYSQL_PASSWORD:-}
+          MYSQL_DATABASE=${MYSQL_DATABASE:-crypto_signals}
+          TIMEZONE=UTC
+          SCANNER_INTERVAL_SECONDS=60
+          DEFAULT_TIMEFRAME=1H
+          EXCHANGE=binance
+          LOG_LEVEL=INFO
+          DEBUG_MODE=false
+          EOF
+
       - name: Upload nginx config and run setup
         env:
           SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
@@ -77,8 +106,8 @@ jobs:
           sleep 8
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
             "$SSH_USER@$SSH_HOST" \
-            'curl -fsSL http://127.0.0.1:5000/ | grep -q CryptoSignals'
+            'curl -fsSL http://127.0.0.1:5000/health | grep -q CryptoSignals'
           curl -4 -fsSL --retry 8 --retry-delay 3 \
             -A "CryptoSignals-Deploy-Check" \
-            "https://cryptosignals.btkdeals.com/" | grep -q "CryptoSignals"
+            "https://cryptosignals.btkdeals.com/health" | grep -q CryptoSignals
           echo "Health check passed"
