@@ -27,7 +27,21 @@ def test_settings_hub_and_smtp(client):
     response = client.get("/settings/")
     assert response.status_code == 200
     assert b"Email alerts" in response.data
+    assert b"Browser push" in response.data
 
     response = client.get("/settings/smtp")
     assert response.status_code == 200
     assert b"Receiver email" in response.data
+
+
+def test_notifications_settings_page(client):
+    response = client.get("/settings/notifications")
+    assert response.status_code == 200
+    assert b"Browser notifications" in response.data
+    assert b"Enable notifications" in response.data
+
+
+def test_firebase_service_worker(client):
+    response = client.get("/firebase-messaging-sw.js")
+    assert response.status_code == 200
+    assert b"firebase.initializeApp" in response.data

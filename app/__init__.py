@@ -17,6 +17,7 @@ from app.routes import (
     dashboard_bp,
     health_bp,
     logs_bp,
+    push_bp,
     scanner_bp,
     settings_bp,
     signals_bp,
@@ -48,6 +49,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(health_bp)
     app.register_blueprint(coins_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(push_bp)
     app.register_blueprint(logs_bp)
     app.register_blueprint(scanner_bp)
     app.register_blueprint(signals_bp)

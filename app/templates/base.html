@@ -23,7 +23,7 @@
           <li class="nav-item"><a class="nav-link" href="{{ url_for('backtest.index') }}">Backtest</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('strategies.index') }}">Strategies</a></li>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('settings.') %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <a class="nav-link dropdown-toggle {% if request.endpoint and (request.endpoint.startswith('settings.') or request.endpoint.startswith('push.')) %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               Settings
             </a>
             <ul class="dropdown-menu">
@@ -31,6 +31,7 @@
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="{{ url_for('settings.general') }}">General</a></li>
               <li><a class="dropdown-item" href="{{ url_for('settings.smtp') }}">Email alerts (SMTP)</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('push.notifications_settings') }}">Browser push (Firebase)</a></li>
               <li><a class="dropdown-item" href="{{ url_for('settings.backup') }}">Backup &amp; restore</a></li>
             </ul>
           </li>

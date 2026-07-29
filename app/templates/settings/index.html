@@ -12,7 +12,7 @@
 {{ settings_nav('hub') }}
 
 <div class="row g-3">
-  <div class="col-md-4">
+  <div class="col-md-6 col-lg-3">
     <a href="{{ url_for('settings.general') }}" class="text-decoration-none">
       <div class="card shadow-sm h-100 settings-hub-card border-0">
         <div class="card-body">
@@ -22,7 +22,7 @@
       </div>
     </a>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-6 col-lg-3">
     <a href="{{ url_for('settings.smtp') }}" class="text-decoration-none">
       <div class="card shadow-sm h-100 settings-hub-card border-0 {% if not smtp_configured %}border border-warning{% endif %}">
         <div class="card-body">
@@ -44,7 +44,17 @@
       </div>
     </a>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('push.notifications_settings') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100 settings-hub-card border-0 border-primary">
+        <div class="card-body">
+          <h2 class="h5 text-body">Browser push</h2>
+          <p class="text-secondary small mb-0">Firebase alerts — recommended instead of Gmail SMTP.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
     <a href="{{ url_for('settings.backup') }}" class="text-decoration-none">
       <div class="card shadow-sm h-100 settings-hub-card border-0">
         <div class="card-body">

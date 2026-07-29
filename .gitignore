@@ -13,3 +13,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+deploy/firebase-service-account.json
+info.json
+**/firebase-adminsdk*.json

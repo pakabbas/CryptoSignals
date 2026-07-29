@@ -9,6 +9,7 @@ from app.database import db
 from app.models import Signal
 from app.services.base import BaseService
 from app.services.email_service import EmailService
+from app.services.push_service import PushNotificationService
 from app.services.settings_service import SettingsService
 from app.utils.logging_setup import get_logger
 
@@ -73,6 +74,7 @@ class SignalService(BaseService[Signal]):
         db.session.flush()
 
         smtp = SettingsService().get_smtp()
+        notified = False
         if smtp.receiver_email and smtp.smtp_server:
             try:
                 EmailService().send_signal_alert(
@@ -84,11 +86,26 @@ class SignalService(BaseService[Signal]):
                     strategy_name=strategy_name,
                     candle_time_utc=candle_time.strftime("%Y-%m-%d %H:%M UTC"),
                 )
-                signal.notified = True
+                notified = True
             except Exception as exc:
                 logger.error("Failed to send alert email: %s", exc)
-        else:
-            logger.warning("SMTP not configured; signal saved without email")
+
+        try:
+            push_count = PushNotificationService().send_signal_alert(
+                signal_type=signal_type,
+                symbol=symbol,
+                timeframe=timeframe,
+                price=price,
+                strategy_name=strategy_name,
+            )
+            if push_count:
+                notified = True
+        except Exception as exc:
+            logger.error("Failed to send push alert: %s", exc)
+
+        signal.notified = notified
+        if not notified:
+            logger.warning("Signal saved; no email or push delivery succeeded")
 
         db.session.commit()
         logger.info("Signal recorded %s %s %s", symbol, signal_type, timeframe)

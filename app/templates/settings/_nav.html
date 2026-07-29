@@ -5,6 +5,9 @@
   <a class="nav-link {% if active == 'smtp' %}active{% endif %}" href="{{ url_for('settings.smtp') }}">
     Email alerts
   </a>
+  <a class="nav-link {% if active == 'notifications' %}active{% endif %}" href="{{ url_for('push.notifications_settings') }}">
+    Browser push
+  </a>
   <a class="nav-link {% if active == 'backup' %}active{% endif %}" href="{{ url_for('settings.backup') }}">Backup</a>
 </nav>
 {% endmacro %}

@@ -96,7 +96,7 @@ signal_type     VARCHAR(16)       NO    —          BUY, SELL, etc.
 timeframe       VARCHAR(8)        NO    —
 price           DECIMAL(20,8)     NO    —
 candle_time     DATETIME          NO    —          Candle close time (UTC)
-notified        TINYINT(1)        NO    0          Email sent flag
+notified        TINYINT(1)        NO    0          Email and/or push sent flag
 created_at      DATETIME          NO    UTC now
 updated_at      DATETIME          NO    UTC now
 
@@ -162,6 +162,21 @@ Default keys inserted on first boot (app_settings.value):
   debug_mode                → false
   last_scan_time            → (empty until scanner runs)
   scanner_status            → idle
+
+================================================================================
+TABLE: push_devices
+================================================================================
+Purpose: FCM web push tokens for browser signal alerts.
+
+Column       Type              Null  Default    Notes
+-----------  ----------------  ----  ---------  ---------------------------
+id           INT               NO    PK AI
+fcm_token    VARCHAR(512)      NO    —          UNIQUE, indexed
+label        VARCHAR(128)      YES   NULL       Optional device label
+user_agent   VARCHAR(512)      YES   NULL
+enabled      TINYINT(1)        NO    1
+created_at   DATETIME          NO    UTC now
+updated_at   DATETIME          NO    UTC now
 
 ================================================================================
 TABLE: logs
