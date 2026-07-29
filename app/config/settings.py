@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
 
@@ -29,8 +30,10 @@ class MySQLConfig:
 
     @property
     def sqlalchemy_uri(self) -> str:
+        user = quote_plus(self.user)
+        password = quote_plus(self.password)
         return (
-            f"mysql+pymysql://{self.user}:{self.password}"
+            f"mysql+pymysql://{user}:{password}"
             f"@{self.host}:{self.port}/{self.database}?charset=utf8mb4"
         )
 
