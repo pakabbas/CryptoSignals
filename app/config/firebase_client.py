@@ -4,6 +4,15 @@ from __future__ import annotations
 
 import os
 
+from app.config.alerts import email_alerts_enabled, push_alerts_enabled
+
+__all__ = [
+    "firebase_client_config",
+    "firebase_vapid_key",
+    "email_alerts_enabled",
+    "push_alerts_enabled",
+]
+
 
 def firebase_client_config() -> dict[str, str]:
     return {
@@ -27,7 +36,3 @@ def firebase_vapid_key() -> str:
         "FIREBASE_VAPID_KEY",
         "BBsDneLMfbyOivSUqe25gSx7vpXwC-CM3VQ8GmBVj6SQLn3ngSz3uDY-ntDXy-IQOKDw5JL5sLJBhBjrHu6wTM0",
     )
-
-
-def push_alerts_enabled() -> bool:
-    return os.getenv("ENABLE_PUSH_ALERTS", "true").lower() in {"1", "true", "yes", "on"}

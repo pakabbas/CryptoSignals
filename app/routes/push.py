@@ -4,7 +4,8 @@ import json
 
 from flask import Blueprint, Response, flash, jsonify, redirect, render_template, request, url_for
 
-from app.config.firebase_client import firebase_client_config, firebase_vapid_key, push_alerts_enabled
+from app.config.alerts import push_alerts_enabled
+from app.config.firebase_client import firebase_client_config, firebase_vapid_key
 from app.services.push_service import PushNotificationService, push_send_readiness
 
 push_bp = Blueprint("push", __name__)

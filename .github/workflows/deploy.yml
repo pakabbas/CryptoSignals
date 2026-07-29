@@ -105,6 +105,7 @@ jobs:
             echo "DEBUG_MODE=false"
             echo "ENABLE_SCHEDULER=true"
             echo "ENABLE_PUSH_ALERTS=true"
+            echo "ENABLE_EMAIL_ALERTS=false"
             echo "FIREBASE_SERVICE_ACCOUNT_PATH=/var/www/cryptosignals/deploy/firebase-service-account.json"
           } > "$ENV_FILE"
           scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \

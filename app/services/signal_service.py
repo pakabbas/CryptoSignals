@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import db
 from app.models import Signal
+from app.config.alerts import email_alerts_enabled
 from app.services.base import BaseService
 from app.services.email_service import EmailService
 from app.services.push_service import PushNotificationService
@@ -73,22 +74,23 @@ class SignalService(BaseService[Signal]):
         db.session.add(signal)
         db.session.flush()
 
-        smtp = SettingsService().get_smtp()
         notified = False
-        if smtp.receiver_email and smtp.smtp_server:
-            try:
-                EmailService().send_signal_alert(
-                    smtp,
-                    signal_type=signal_type,
-                    symbol=symbol,
-                    timeframe=timeframe,
-                    price=price,
-                    strategy_name=strategy_name,
-                    candle_time_utc=candle_time.strftime("%Y-%m-%d %H:%M UTC"),
-                )
-                notified = True
-            except Exception as exc:
-                logger.error("Failed to send alert email: %s", exc)
+        if email_alerts_enabled():
+            smtp = SettingsService().get_smtp()
+            if smtp.receiver_email and smtp.smtp_server:
+                try:
+                    EmailService().send_signal_alert(
+                        smtp,
+                        signal_type=signal_type,
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        price=price,
+                        strategy_name=strategy_name,
+                        candle_time_utc=candle_time.strftime("%Y-%m-%d %H:%M UTC"),
+                    )
+                    notified = True
+                except Exception as exc:
+                    logger.error("Failed to send alert email: %s", exc)
 
         try:
             push_count = PushNotificationService().send_signal_alert(

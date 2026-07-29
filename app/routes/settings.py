@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 
 from app.config.timeframes import SUPPORTED_TIMEFRAMES, normalize_timeframe, timeframe_label
+from app.config.alerts import email_alerts_enabled
 from app.exchanges.registry import list_supported_exchanges
 from app.services.config_backup_service import ConfigBackupService
 from app.services.email_service import EmailService
@@ -15,7 +16,7 @@ settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
 def index():
     service = SettingsService()
     smtp_row = service.get_smtp()
-    smtp_configured = bool(
+    smtp_configured = email_alerts_enabled() and bool(
         smtp_row.smtp_server
         and smtp_row.receiver_email
         and smtp_row.sender_email
@@ -24,6 +25,7 @@ def index():
         "settings/index.html",
         smtp=smtp_row,
         smtp_configured=smtp_configured,
+        email_alerts_enabled=email_alerts_enabled(),
     )
 
 
@@ -61,7 +63,6 @@ def general():
 def smtp():
     service = SettingsService()
     smtp_row = service.get_smtp()
-
     if request.method == "POST":
         service.update_smtp(
             {
@@ -83,11 +84,18 @@ def smtp():
         flash("SMTP settings saved.", "success")
         return redirect(url_for("settings.smtp"))
 
-    return render_template("settings/smtp.html", smtp=smtp_row)
+    return render_template(
+        "settings/smtp.html",
+        smtp=smtp_row,
+        email_alerts_enabled=email_alerts_enabled(),
+    )
 
 
 @settings_bp.route("/smtp/test", methods=["POST"])
 def smtp_test():
+    if not email_alerts_enabled():
+        flash("Email alerts are disabled on the server (ENABLE_EMAIL_ALERTS=false).", "warning")
+        return redirect(url_for("settings.smtp"))
     service = SettingsService()
     smtp_row = service.get_smtp()
     try:

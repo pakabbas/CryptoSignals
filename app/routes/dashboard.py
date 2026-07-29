@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from flask import Blueprint, render_template
 
-from app.config.firebase_client import firebase_client_config, firebase_vapid_key, push_alerts_enabled
+from app.config.alerts import email_alerts_enabled, push_alerts_enabled
+from app.config.firebase_client import firebase_client_config, firebase_vapid_key
 from app.models import LogEntry, Signal
 from app.services.coin_service import CoinService
 from app.services.settings_service import SettingsService
@@ -26,7 +27,9 @@ def index():
     recent_logs = LogEntry.query.order_by(LogEntry.created_at.desc()).limit(10).all()
 
     smtp_row = settings_service.get_smtp()
-    smtp_configured = bool(smtp_row.smtp_server and smtp_row.receiver_email)
+    smtp_configured = email_alerts_enabled() and bool(
+        smtp_row.smtp_server and smtp_row.receiver_email
+    )
 
     return render_template(
         "dashboard.html",

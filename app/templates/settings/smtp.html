@@ -16,6 +16,13 @@
 
 {{ settings_nav('smtp') }}
 
+{% if not email_alerts_enabled %}
+<div class="alert alert-secondary border-0 shadow-sm small mb-3">
+  Email alerts are <strong>turned off</strong> on the server. Signals use <strong>browser push</strong> only.
+  Set <code>ENABLE_EMAIL_ALERTS=true</code> in <code>.env</code> to send email again.
+</div>
+{% endif %}
+
 <div class="alert alert-info border-0 shadow-sm small mb-4">
   <strong>Gmail setup:</strong> server <code>smtp.gmail.com</code>, port <code>587</code>, enable <strong>Use TLS (STARTTLS)</strong>, turn <strong>off</strong> Use SSL.
   Use a <strong>Google App Password</strong> (16 characters) — not your normal Gmail password.

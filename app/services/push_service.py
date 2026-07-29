@@ -4,7 +4,7 @@ import json
 import os
 from typing import Any
 
-from app.config.firebase_client import push_alerts_enabled
+from app.config.alerts import push_alerts_enabled
 from app.database import db
 from app.models import PushDevice
 from app.services.base import BaseService
