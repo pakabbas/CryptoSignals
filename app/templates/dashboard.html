@@ -40,11 +40,6 @@
   </div>
   <a class="btn btn-warning btn-sm" href="{{ url_for('settings.smtp') }}">Set up email alerts</a>
 </div>
-{% else %}
-<div class="alert alert-success border-0 shadow-sm py-2 small mb-4 mb-md-3">
-  Signal emails go to <strong>{{ smtp.receiver_email }}</strong>.
-  <a href="{{ url_for('settings.smtp') }}" class="alert-link">Change</a>
-</div>
 {% endif %}
 
 <div class="row g-3 mb-4">
@@ -113,7 +108,12 @@
     <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="text-secondary small">Last scan</div>
-        <div class="fs-6 fw-semibold">{{ runtime.last_scan_time or '—' }}</div>
+        {% set last_scan = runtime.last_scan_time %}
+        {% if last_scan and last_scan != '—' %}
+        <div class="fs-6 fw-semibold" data-relative-time="{{ last_scan }}" title="{{ last_scan }}">—</div>
+        {% else %}
+        <div class="fs-6 fw-semibold">—</div>
+        {% endif %}
       </div>
     </div>
   </div>
