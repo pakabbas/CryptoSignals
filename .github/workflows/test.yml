@@ -18,3 +18,4 @@ jobs:
         env:
           TESTING: "true"
           ENABLE_SCHEDULER: "false"
+          PYTHONPATH: ${{ github.workspace }}
