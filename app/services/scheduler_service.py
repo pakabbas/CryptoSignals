@@ -38,13 +38,15 @@ class SchedulerService:
         )
         self.scheduler.start()
         self.started = True
-        logger.info("APScheduler scanner started (interval=%ss)", interval)
+        with self.app.app_context():
+            logger.info("APScheduler scanner started (interval=%ss)", interval)
 
     def stop(self) -> None:
         if self.started:
             self.scheduler.shutdown(wait=False)
             self.started = False
-            logger.info("APScheduler stopped")
+            with self.app.app_context():
+                logger.info("APScheduler stopped")
 
     def _run_scan(self) -> None:
         with self.app.app_context():

@@ -3,9 +3,8 @@ from __future__ import annotations
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any
 
-from flask import Flask
+from flask import Flask, has_app_context
 
 from app.database import db
 from app.models import LogEntry
@@ -14,8 +13,9 @@ from app.models import LogEntry
 class DatabaseLogHandler(logging.Handler):
     """Persists log records to the logs table."""
 
-    def __init__(self, category: str) -> None:
+    def __init__(self, app: Flask, category: str) -> None:
         super().__init__()
+        self.app = app
         self.category = category
 
     def emit(self, record: logging.LogRecord) -> None:
@@ -31,10 +31,22 @@ class DatabaseLogHandler(logging.Handler):
                     "funcName": record.funcName,
                 },
             )
-            db.session.add(entry)
-            db.session.commit()
+            if has_app_context():
+                db.session.add(entry)
+                db.session.commit()
+            else:
+                with self.app.app_context():
+                    db.session.add(entry)
+                    db.session.commit()
         except Exception:
-            db.session.rollback()
+            try:
+                if has_app_context():
+                    db.session.rollback()
+                else:
+                    with self.app.app_context():
+                        db.session.rollback()
+            except Exception:
+                pass
 
 
 def setup_logging(app: Flask) -> None:
@@ -64,7 +76,7 @@ def setup_logging(app: Flask) -> None:
         logger.addHandler(file_handler)
 
         if app.config.get("LOG_TO_DATABASE", True):
-            db_handler = DatabaseLogHandler(category=category)
+            db_handler = DatabaseLogHandler(app=app, category=category)
             db_handler.setLevel(level)
             db_handler.setFormatter(formatter)
             logger.addHandler(db_handler)
