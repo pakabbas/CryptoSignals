@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, render_template
 
+from app.config.firebase_client import firebase_client_config, firebase_vapid_key, push_alerts_enabled
 from app.models import LogEntry, Signal
 from app.services.coin_service import CoinService
 from app.services.settings_service import SettingsService
@@ -38,4 +39,7 @@ def index():
         running_strategies=StrategyService().list_enabled(),
         smtp=smtp_row,
         smtp_configured=smtp_configured,
+        firebase_config=firebase_client_config(),
+        vapid_key=firebase_vapid_key(),
+        push_enabled=push_alerts_enabled(),
     )

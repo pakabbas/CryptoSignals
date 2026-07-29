@@ -9,6 +9,22 @@
   <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('scanner.index') }}">Open live scanner</a>
 </div>
 
+{% if push_enabled %}
+<div id="fcmDashboardPrompt" class="alert alert-primary border-0 shadow-sm mb-4 d-none">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+      <strong>Allow notifications for signal alerts</strong>
+      <p class="small mb-0 opacity-75">Get BUY/SELL alerts in this browser — no email required.</p>
+      <p id="fcmStatus" class="small mb-0 mt-1"></p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-light" id="fcmEnableBtn">Allow notifications</button>
+      <a class="btn btn-outline-light btn-sm align-self-center" href="{{ url_for('push.notifications_settings') }}">Settings</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if not smtp_configured %}
 <div class="alert alert-info border-0 shadow-sm d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
   <div>
@@ -214,4 +230,14 @@
     </div>
   </div>
 </div>
+{% if push_enabled %}
+<script type="module">
+  window.__FIREBASE_CLIENT__ = {{ firebase_config | tojson }};
+  window.__FIREBASE_VAPID__ = {{ vapid_key | tojson }};
+  window.__FCM_REGISTER_URL__ = {{ url_for('push.register') | tojson }};
+  window.__FCM_UNREGISTER_URL__ = {{ url_for('push.unregister') | tojson }};
+  window.__FCM_AUTO_REGISTER__ = true;
+</script>
+<script type="module" src="{{ url_for('static', filename='js/firebase-notifications.js') }}"></script>
+{% endif %}
 {% endblock %}

@@ -65,6 +65,7 @@ async function enablePush() {
   }
   await registerServer(token);
   setStatus("Enabled — token registered.");
+  document.getElementById("fcmDashboardPrompt")?.classList.add("d-none");
 }
 
 async function disablePush() {
@@ -93,8 +94,31 @@ disableBtn?.addEventListener("click", () => {
   disablePush().catch((e) => setStatus(String(e), true));
 });
 
-if (Notification?.permission === "granted") {
+const dashboardPrompt = document.getElementById("fcmDashboardPrompt");
+
+function refreshDashboardPrompt() {
+  if (!dashboardPrompt) return;
+  const perm = Notification?.permission;
+  if (perm === "granted") {
+    dashboardPrompt.classList.add("d-none");
+    return;
+  }
+  dashboardPrompt.classList.remove("d-none");
+  if (perm === "denied") {
+    setStatus("Notifications blocked — allow them in browser settings, then refresh.", true);
+  } else if (statusEl) {
+    setStatus("Click Allow to turn on alerts.");
+  }
+}
+
+refreshDashboardPrompt();
+
+if (window.__FCM_AUTO_REGISTER__ && Notification?.permission === "granted") {
+  enablePush().catch(() => refreshDashboardPrompt());
+}
+
+if (Notification?.permission === "granted" && !dashboardPrompt) {
   setStatus("Permission already granted — click Enable to register this device.");
-} else {
+} else if (!dashboardPrompt) {
   setStatus("Not enabled yet.");
 }

@@ -3,6 +3,7 @@ def test_dashboard_loads(client):
     assert response.status_code == 200
     assert b"Dashboard" in response.data
     assert b"BTC/USDT" in response.data
+    assert b"Allow notifications" in response.data
 
 
 def test_primary_coin_seeded(client):
