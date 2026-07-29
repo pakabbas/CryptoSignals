@@ -23,6 +23,13 @@ fi
 "$APP_DIR/.venv/bin/pip" install --upgrade pip
 "$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/requirements.txt"
 
+if [[ -f "$APP_DIR/.env" ]]; then
+  if ! "$APP_DIR/.venv/bin/python" "$APP_DIR/deploy/ensure_mysql_database.py"; then
+    echo "Could not create database via app user. Run once as MySQL admin:"
+    echo "  sudo mysql < $APP_DIR/deploy/init-database.sql"
+  fi
+fi
+
 TMP_SERVICE="/tmp/${SERVICE_NAME}.service"
 sed "s/APP_USER/${APP_USER}/g" "$APP_DIR/deploy/cryptosignals.service" > "$TMP_SERVICE"
 sudo cp "$TMP_SERVICE" "/etc/systemd/system/${SERVICE_NAME}.service"

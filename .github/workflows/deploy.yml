@@ -48,6 +48,15 @@ jobs:
             ./ \
             "$SSH_USER@$SSH_HOST:/var/www/cryptosignals/"
 
+      - name: Create crypto_signals database on VM
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            'sudo mysql < /var/www/cryptosignals/deploy/init-database.sql'
+
       - name: Write server environment file
         env:
           SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
@@ -65,7 +74,7 @@ jobs:
             echo "SECRET_KEY=${SECRET_KEY:-change-me-in-production}"
             echo "MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}"
             echo "MYSQL_PORT=${MYSQL_PORT:-3306}"
-            echo "MYSQL_USER=${MYSQL_USER:-root}"
+            echo "MYSQL_USER=${MYSQL_USER:-leadpilot}"
             echo "MYSQL_PASSWORD=${MYSQL_PASSWORD:-}"
             echo "MYSQL_DATABASE=${MYSQL_DATABASE:-crypto_signals}"
             echo "TIMEZONE=UTC"
