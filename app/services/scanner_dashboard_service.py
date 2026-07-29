@@ -9,8 +9,10 @@ import pandas as pd
 
 from app.models import Coin, Strategy
 from app.scanner.candle_utils import (
+    last_closed_bar_index,
     next_candle_close_utc,
 )
+from app.utils.cache import scanner_dashboard_cache
 from app.services.coin_service import CoinService
 from app.services.exchange_service import exchange_service_for_settings
 from app.services.settings_service import SettingsService
@@ -72,8 +74,14 @@ class ScannerDashboardService:
         default_tf = normalize_timeframe(
             market_timeframe or self.settings.get("default_timeframe", "1H")
         )
+        cache_key = f"live:{default_tf}"
+        cached = scanner_dashboard_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         enabled_coins = [c for c in self.coins.list_coins() if c.enabled]
         ohlcv_cache: dict[tuple[int, str], pd.DataFrame] = {}
+        enriched_cache: dict[tuple[int, int], pd.DataFrame] = {}
 
         tickers: list[CoinTicker] = []
         for coin in enabled_coins:
@@ -85,7 +93,9 @@ class ScannerDashboardService:
             assigned = self.strategies.list_enabled_for_coin(coin.id)
             coin_strategies = assigned if assigned else all_enabled
             for strategy in coin_strategies:
-                views.append(self._strategy_view(coin, strategy, ohlcv_cache, now))
+                views.append(
+                    self._strategy_view(coin, strategy, ohlcv_cache, enriched_cache, now)
+                )
 
         views.sort(
             key=lambda v: (
@@ -97,7 +107,9 @@ class ScannerDashboardService:
                 v.strategy_name,
             )
         )
-        return tickers, views
+        result = (tickers, views)
+        scanner_dashboard_cache.set(cache_key, result)
+        return result
 
     def _get_df(self, coin: Coin, timeframe: str, cache: dict[tuple[int, str], pd.DataFrame]) -> pd.DataFrame:
         key = (coin.id, timeframe)
@@ -156,6 +168,7 @@ class ScannerDashboardService:
         coin: Coin,
         strategy: Strategy,
         cache: dict[tuple[int, str], pd.DataFrame],
+        enriched_cache: dict[tuple[int, int], pd.DataFrame],
         now: datetime,
     ) -> StrategyLiveView:
         tf = strategy.timeframe or self.settings.get("default_timeframe", "1H")
@@ -176,8 +189,17 @@ class ScannerDashboardService:
             )
         try:
             df = self._get_df(coin, tf, cache)
-            detail: DetailedEvaluation = self.evaluator.evaluate_detailed(
-                df, strategy.definition_json, tf
+            if df.empty or len(df) < 3:
+                raise ValueError("Not enough candle data")
+            ekey = (coin.id, strategy.id)
+            if ekey not in enriched_cache:
+                enriched_cache[ekey] = self.evaluator._enrich_dataframe(
+                    df, strategy.definition_json
+                )
+            enriched = enriched_cache[ekey]
+            bar_idx = last_closed_bar_index(list(enriched.index.to_pydatetime()), tf, now)
+            detail = self.evaluator.evaluate_detailed_at_index(
+                enriched, strategy.definition_json, bar_idx, pre_enriched=True
             )
             last_open = df.index[-1].to_pydatetime()
             if last_open.tzinfo is None:

@@ -241,6 +241,5 @@
 <script src="{{ url_for('static', filename='js/scanner-live.js') }}"></script>
 <script>
 document.getElementById("scannerRefreshBtn")?.addEventListener("click", () => location.reload());
-setInterval(() => location.reload(), {{ runtime.scanner_interval_seconds * 1000 }});
 </script>
 {% endblock %}

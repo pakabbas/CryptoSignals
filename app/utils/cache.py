@@ -55,4 +55,5 @@ class TTLCache(Generic[T]):
             del self._data[key]
 
 
-ohlcv_cache: TTLCache[Any] = TTLCache(default_ttl_seconds=45.0, max_entries=256)
+ohlcv_cache: TTLCache[Any] = TTLCache(default_ttl_seconds=90.0, max_entries=256)
+scanner_dashboard_cache: TTLCache[Any] = TTLCache(default_ttl_seconds=55.0, max_entries=16)
