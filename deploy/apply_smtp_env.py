@@ -28,7 +28,7 @@ def main() -> None:
     smtp_host = _env("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(_env("SMTP_PORT", "587"))
     smtp_user = _env("SMTP_USERNAME", "")
-    smtp_pass = _env("SMTP_PASSWORD", "")
+    smtp_pass = _env("SMTP_PASSWORD", "").replace(" ", "")
     smtp_from_name = _env("SMTP_FROM_NAME", "")
     smtp_from = _env("SMTP_FROM_EMAIL", smtp_user)
     smtp_to = _env("SMTP_TO_EMAIL", smtp_from)
@@ -79,24 +79,29 @@ def main() -> None:
                 )
             else:
                 smtp_id = row[0]
-                cursor.execute(
+                updates = [
+                    smtp_host,
+                    smtp_port,
+                    smtp_user,
+                    int(use_tls),
+                    int(use_ssl),
+                    smtp_from_name,
+                    smtp_from,
+                    smtp_to,
+                ]
+                sql = (
                     "UPDATE smtp_settings SET "
-                    "smtp_server=%s, smtp_port=%s, username=%s, password=%s, "
+                    "smtp_server=%s, smtp_port=%s, username=%s, "
                     "use_tls=%s, use_ssl=%s, sender_name=%s, sender_email=%s, receiver_email=%s, updated_at=NOW() "
-                    "WHERE id=%s",
-                    (
-                        smtp_host,
-                        smtp_port,
-                        smtp_user,
-                        smtp_pass,
-                        int(use_tls),
-                        int(use_ssl),
-                        smtp_from_name,
-                        smtp_from,
-                        smtp_to,
-                        smtp_id,
-                    ),
                 )
+                if smtp_pass:
+                    sql += ", password=%s WHERE id=%s"
+                    updates.append(smtp_pass)
+                    updates.append(smtp_id)
+                else:
+                    sql += "WHERE id=%s"
+                    updates.append(smtp_id)
+                cursor.execute(sql, tuple(updates))
         connection.commit()
     finally:
         connection.close()

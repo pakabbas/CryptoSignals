@@ -66,6 +66,10 @@ class SettingsService(BaseService[AppSetting]):
 
     def update_smtp(self, data: dict[str, Any]) -> SmtpSetting:
         smtp = self.get_smtp()
+        payload = dict(data)
+        password = payload.get("password", "")
+        if password is not None and not str(password).strip():
+            payload.pop("password", None)
         for field in (
             "smtp_server",
             "smtp_port",
@@ -78,8 +82,14 @@ class SettingsService(BaseService[AppSetting]):
             "receiver_email",
             "subject_template",
         ):
-            if field in data:
-                setattr(smtp, field, data[field])
+            if field in payload:
+                value = payload[field]
+                if field == "password":
+                    value = str(value).replace(" ", "")
+                setattr(smtp, field, value)
+        if smtp.smtp_port == 587 and smtp.use_ssl:
+            smtp.use_ssl = False
+            smtp.use_tls = True
         db.session.commit()
         logger.info("SMTP settings updated")
         return smtp

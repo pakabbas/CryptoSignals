@@ -17,8 +17,11 @@
 {{ settings_nav('smtp') }}
 
 <div class="alert alert-info border-0 shadow-sm small mb-4">
-  <strong>Gmail example:</strong> server <code>smtp.gmail.com</code>, port <code>587</code>, enable <strong>Use TLS</strong>,
-  use a Google <strong>App Password</strong> (not your normal login password).
+  <strong>Gmail setup:</strong> server <code>smtp.gmail.com</code>, port <code>587</code>, enable <strong>Use TLS (STARTTLS)</strong>, turn <strong>off</strong> Use SSL.
+  Use a <strong>Google App Password</strong> (16 characters) — not your normal Gmail password.
+  Requires <a href="https://myaccount.google.com/security" target="_blank" rel="noopener">2-Step Verification</a>
+  then create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">App passwords</a> (choose Mail / Other).
+  If you see <code>5.7.9 WebLoginRequired</code>, generate a new App Password and paste it here, then save.
   Put your personal inbox in <strong>Receiver email</strong> — that is where signal alerts arrive.
 </div>
 
@@ -59,7 +62,8 @@
     </div>
     <div class="col-md-6">
       <label class="form-label">Password</label>
-      <input type="password" name="password" class="form-control" value="{{ smtp.password }}" autocomplete="new-password">
+      <input type="password" name="password" class="form-control" value="" autocomplete="new-password" placeholder="Gmail App Password (16 chars)">
+      <div class="form-text">Leave blank to keep the saved password. Use a Google App Password, not your normal Gmail password.</div>
     </div>
     <div class="col-md-6">
       <div class="form-check">

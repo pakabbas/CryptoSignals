@@ -51,27 +51,40 @@ class EmailService(BaseService[SmtpSetting]):
         if not smtp.smtp_server or not smtp.receiver_email:
             raise ValueError("SMTP server and receiver email are required")
 
+        username = (smtp.username or "").strip()
+        password = (smtp.password or "").replace(" ", "")
+        if username and not password:
+            raise ValueError(
+                "SMTP password is empty. Re-enter your Gmail App Password and save."
+            )
+
         message = EmailMessage()
         message["Subject"] = subject
-        from_email = smtp.sender_email or smtp.username
+        from_email = (smtp.sender_email or smtp.username or "").strip()
         if smtp.sender_name:
             message["From"] = formataddr((smtp.sender_name, from_email))
         else:
             message["From"] = from_email
-        message["To"] = smtp.receiver_email
+        message["To"] = smtp.receiver_email.strip()
         message.set_content(body)
 
-        if smtp.use_ssl:
-            with smtplib.SMTP_SSL(smtp.smtp_server, smtp.smtp_port, timeout=30) as server:
-                if smtp.username:
-                    server.login(smtp.username, smtp.password)
+        port = int(smtp.smtp_port or 587)
+        use_ssl = bool(smtp.use_ssl) and port == 465
+
+        if use_ssl:
+            with smtplib.SMTP_SSL(smtp.smtp_server, port, timeout=30) as server:
+                server.ehlo()
+                if username:
+                    server.login(username, password)
                 server.send_message(message)
         else:
-            with smtplib.SMTP(smtp.smtp_server, smtp.smtp_port, timeout=30) as server:
-                if smtp.use_tls:
+            with smtplib.SMTP(smtp.smtp_server, port, timeout=30) as server:
+                server.ehlo()
+                if smtp.use_tls or port == 587:
                     server.starttls()
-                if smtp.username:
-                    server.login(smtp.username, smtp.password)
+                    server.ehlo()
+                if username:
+                    server.login(username, password)
                 server.send_message(message)
 
         logger.info("Email sent to %s", smtp.receiver_email)
