@@ -4,7 +4,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
   <div>
     <h1 class="h3 mb-1">Dashboard</h1>
-    <p class="text-secondary mb-0">Live overview for <strong>{{ runtime.primary_symbol }}</strong></p>
+    <p class="text-secondary mb-0">Live overview — {{ enabled_coins|length }} pair(s) monitored{% if runtime.primary_symbol %} (primary {{ runtime.primary_symbol }}){% endif %}</p>
   </div>
   <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('scanner.index') }}">Open live scanner</a>
 </div>
@@ -150,7 +150,7 @@
             {% endfor %}
           </ul>
         {% else %}
-          <p class="text-secondary mb-0">No enabled coins. Enable BTC/USDT on the <a href="{{ url_for('coins.index') }}">coin page</a>.</p>
+          <p class="text-secondary mb-0">No enabled coins. Enable pairs on the <a href="{{ url_for('coins.index') }}">coins page</a>.</p>
         {% endif %}
       </div>
     </div>

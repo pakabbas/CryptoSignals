@@ -30,7 +30,7 @@ Tables are created/updated by SQLAlchemy on app startup:
 ================================================================================
 SCOPE (current phase)
 ================================================================================
-Primary trading pair: BTC/USDT (seeded in coins on first successful boot)
+Primary trading pairs: BTC/USDT, ETH/USDT, SOL/USDT, DOGE/USDT (seeded on first successful boot)
 Other tables exist for Steps 2–5; most rows empty until those features run.
 
 ================================================================================
@@ -246,7 +246,7 @@ strategies 1 — * backtest_results
 ================================================================================
 SEED / EXPECTED DATA (Step 1)
 ================================================================================
-coins: one row — symbol BTC/USDT, exchange binance, enabled=1, group_name primary
+coins: BTC/USDT (primary), ETH/USDT, SOL/USDT, DOGE/USDT — enabled=1, exchange from app_settings (default kraken on GCP)
 
 app_settings: default keys above (if missing)
 

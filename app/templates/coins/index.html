@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}BTC/USDT · Crypto Signal Bot{% endblock %}
+{% block title %}Coins · Crypto Signal Bot{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <h1 class="h3 mb-1">Coin: {{ primary_symbol }}</h1>
-    <p class="text-secondary mb-0">Step 1 focuses on a single pair. Multi-coin support comes later.</p>
+    <h1 class="h3 mb-1">Monitored coins</h1>
+    <p class="text-secondary mb-0">BTC, ETH, SOL, and DOGE vs USDT. Disable any pair you do not want scanned.</p>
   </div>
 </div>
 
 <form class="row g-2 mb-4" method="get">
   <div class="col-auto">
-    <input type="search" name="q" class="form-control" placeholder="Search symbol" value="{{ search }}" disabled>
+    <input type="search" name="q" class="form-control" placeholder="Search symbol" value="{{ search }}">
   </div>
   <div class="col-auto">
-    <button class="btn btn-outline-secondary" type="submit" disabled>Search</button>
+    <button class="btn btn-outline-secondary" type="submit">Search</button>
   </div>
 </form>
 

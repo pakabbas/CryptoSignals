@@ -10,15 +10,15 @@ coins_bp = Blueprint("coins", __name__, url_prefix="/coins")
 @coins_bp.route("/", methods=["GET", "POST"])
 def index():
     coin_service = CoinService()
-    coin_service.ensure_primary_coin()
+    coin_service.ensure_default_coins()
 
     if request.method == "POST":
         action = request.form.get("action")
         coin_id = request.form.get("coin_id", type=int)
         if action == "toggle" and coin_id:
             enabled = request.form.get("enabled") == "on"
-            coin_service.set_enabled(coin_id, enabled)
-            flash("BTC/USDT monitoring updated.", "success")
+            coin = coin_service.set_enabled(coin_id, enabled)
+            flash(f"{coin.symbol} monitoring updated.", "success")
         elif action == "group" and coin_id:
             coin_service.update_group(coin_id, request.form.get("group_name"))
             flash("Coin group updated.", "success")

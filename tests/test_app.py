@@ -10,6 +10,9 @@ def test_primary_coin_seeded(client):
     response = client.get("/coins/")
     assert response.status_code == 200
     assert b"BTC/USDT" in response.data
+    assert b"ETH/USDT" in response.data
+    assert b"SOL/USDT" in response.data
+    assert b"DOGE/USDT" in response.data
 
 
 def test_scanner_page_loads(client):

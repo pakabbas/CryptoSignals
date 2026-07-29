@@ -16,7 +16,7 @@ logger = get_logger("scanner")
 
 
 class ScannerService:
-    """Fetch candles, evaluate strategies, emit signals (BTC/USDT focus)."""
+    """Fetch candles, evaluate strategies, emit signals for enabled USDT pairs."""
 
     def __init__(self) -> None:
         self._exchange: ExchangeService | None = None

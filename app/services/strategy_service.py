@@ -32,6 +32,21 @@ class StrategyService(BaseService[Strategy]):
         db.session.commit()
         self._assign_all_enabled_coins_to_defaults()
 
+    def attach_new_enabled_coins_to_active_strategies(self) -> None:
+        """Add newly seeded enabled coins to strategies that already monitor at least one pair."""
+        enabled = Coin.query.filter_by(enabled=True).order_by(Coin.symbol.asc()).all()
+        if not enabled:
+            return
+        for strategy in Strategy.query.filter_by(enabled=True).all():
+            linked_ids = {c.id for c in strategy.coins}
+            if not linked_ids:
+                strategy.coins = list(enabled)
+                continue
+            for coin in enabled:
+                if coin.id not in linked_ids:
+                    strategy.coins.append(coin)
+        db.session.commit()
+
     def _assign_all_enabled_coins_to_defaults(self) -> None:
         coins = Coin.query.filter_by(enabled=True).all()
         if not coins:

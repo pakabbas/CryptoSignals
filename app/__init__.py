@@ -40,6 +40,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.config["SQLALCHEMY_DATABASE_URI"] = config_class.database_uri()
     app.config["SCANNER_INTERVAL_SECONDS"] = config_class.SCANNER_INTERVAL_SECONDS
     app.config["PRIMARY_SYMBOL"] = config_class.PRIMARY_SYMBOL
+    app.config["DEFAULT_SYMBOLS"] = config_class.DEFAULT_SYMBOLS
     app.config["LOG_TO_DATABASE"] = True
 
     db.init_app(app)
@@ -83,7 +84,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
             apply_schema_patches()
             setup_logging(app)
             SettingsService().ensure_defaults()
-            CoinService().ensure_primary_coin()
+            CoinService().ensure_default_coins()
             StrategyService().ensure_default_strategies()
         except Exception as exc:
             db_ready = False

@@ -50,6 +50,12 @@ class Config:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
 
     PRIMARY_SYMBOL: str = "BTC/USDT"
+    DEFAULT_SYMBOLS: tuple[str, ...] = (
+        "BTC/USDT",
+        "ETH/USDT",
+        "SOL/USDT",
+        "DOGE/USDT",
+    )
 
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     SQLALCHEMY_ENGINE_OPTIONS: dict = {
