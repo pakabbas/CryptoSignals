@@ -1,8 +1,7 @@
 name: Tests
 
+# PRs only — pushes to main run pytest inside deploy.yml (avoids duplicate Actions runs).
 on:
-  push:
-    branches: [main]
   pull_request:
 
 jobs:

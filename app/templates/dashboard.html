@@ -25,23 +25,6 @@
 </div>
 {% endif %}
 
-{% if not smtp_configured %}
-<div class="alert alert-info border-0 shadow-sm d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-  <div>
-    <strong>Tip:</strong> Gmail SMTP often fails from cloud servers.
-    Use <strong>browser push</strong> for BUY/SELL alerts instead of email.
-  </div>
-  <a class="btn btn-primary btn-sm" href="{{ url_for('push.notifications_settings') }}">Enable browser push</a>
-</div>
-<div class="alert alert-warning border-0 shadow-sm d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-  <div>
-    <strong>Email alerts are not configured.</strong>
-    Add SMTP and choose which inbox receives BUY/SELL signals (optional if you use push).
-  </div>
-  <a class="btn btn-warning btn-sm" href="{{ url_for('settings.smtp') }}">Set up email alerts</a>
-</div>
-{% endif %}
-
 <div class="row g-3 mb-4">
   <div class="col-sm-6 col-lg-3">
     <a href="{{ url_for('push.notifications_settings') }}" class="text-decoration-none">
