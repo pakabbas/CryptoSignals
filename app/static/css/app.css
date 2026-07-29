@@ -56,3 +56,26 @@ body {
 .metric-tile {
   border-radius: 0.5rem;
 }
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-th::after {
+  content: " ↕";
+  opacity: 0.35;
+  font-size: 0.75em;
+}
+
+.sortable-th.sorted-asc::after {
+  content: " ↑";
+  opacity: 0.9;
+}
+
+.sortable-th.sorted-desc::after {
+  content: " ↓";
+  opacity: 0.9;
+}
+

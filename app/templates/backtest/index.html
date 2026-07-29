@@ -47,33 +47,33 @@
 <div class="card shadow-sm">
   <div class="card-header fw-semibold">Recent backtests</div>
   <div class="table-responsive">
-    <table class="table mb-0 align-middle">
+    <table class="table mb-0 align-middle sortable-table">
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Strategy</th>
-          <th>Coin</th>
-          <th>Period</th>
-          <th class="text-end">Trades</th>
-          <th class="text-end">Wins</th>
-          <th class="text-end">Losses</th>
-          <th class="text-end">Return %</th>
-          <th class="text-end">Win rate</th>
+          <th data-sort="date">Date</th>
+          <th data-sort="text">Strategy</th>
+          <th data-sort="text">Coin</th>
+          <th data-sort="text">Period</th>
+          <th class="text-end" data-sort="number">Trades</th>
+          <th class="text-end" data-sort="number">Wins</th>
+          <th class="text-end" data-sort="number">Losses</th>
+          <th class="text-end" data-sort="number">Return %</th>
+          <th class="text-end" data-sort="number">Win rate</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         {% for r in results %}
           <tr>
-            <td class="small">{{ r.created_at }}</td>
+            <td class="small" data-sort-value="{{ r.created_at }}">{{ r.created_at }}</td>
             <td>{{ r.strategy_name }}</td>
             <td>{{ r.coin_symbol }}</td>
-            <td>{{ r.period_days }}d · {{ r.timeframe }}</td>
-            <td class="text-end fw-semibold">{{ r.total_trades if r.total_trades is not none else 0 }}</td>
-            <td class="text-end">{{ r.winning_trades if r.winning_trades is not none else 0 }}</td>
-            <td class="text-end">{{ r.losing_trades if r.losing_trades is not none else 0 }}</td>
-            <td class="text-end">{{ '%.2f'|format(r.return_pct or 0) }}</td>
-            <td class="text-end">{{ '%.1f'|format(r.win_rate or 0) }}%</td>
+            <td data-sort-value="{{ r.period_days }}-{{ r.timeframe }}">{{ r.period_days }}d · {{ r.timeframe }}</td>
+            <td class="text-end fw-semibold" data-sort-value="{{ r.total_trades if r.total_trades is not none else 0 }}">{{ r.total_trades if r.total_trades is not none else 0 }}</td>
+            <td class="text-end" data-sort-value="{{ r.winning_trades if r.winning_trades is not none else 0 }}">{{ r.winning_trades if r.winning_trades is not none else 0 }}</td>
+            <td class="text-end" data-sort-value="{{ r.losing_trades if r.losing_trades is not none else 0 }}">{{ r.losing_trades if r.losing_trades is not none else 0 }}</td>
+            <td class="text-end" data-sort-value="{{ r.return_pct or 0 }}">{{ '%.2f'|format(r.return_pct or 0) }}</td>
+            <td class="text-end" data-sort-value="{{ r.win_rate or 0 }}">{{ '%.1f'|format(r.win_rate or 0) }}%</td>
             <td><a href="{{ url_for('backtest.show', result_id=r.id) }}">Report</a></td>
           </tr>
         {% else %}
