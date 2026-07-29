@@ -12,6 +12,14 @@ from app.utils.logging_setup import get_logger
 
 logger = get_logger("app")
 
+# Per-pair market data source (matches Coins UI on production).
+DEFAULT_COIN_EXCHANGES: dict[str, str] = {
+    "BTC/USDT": "binance",
+    "ETH/USDT": "kraken",
+    "SOL/USDT": "kraken",
+    "DOGE/USDT": "kraken",
+}
+
 
 class CoinService(BaseService[Coin]):
     def _default_symbols(self) -> tuple[str, ...]:
@@ -35,21 +43,33 @@ class CoinService(BaseService[Coin]):
     def ensure_default_coins(self) -> list[Coin]:
         exchange = self._default_exchange()
         created_any = False
+        updated_any = False
         result: list[Coin] = []
         primary_symbol = current_app.config.get("PRIMARY_SYMBOL", "BTC/USDT")
 
         for symbol in self._default_symbols():
+            desired_exchange = DEFAULT_COIN_EXCHANGES.get(symbol, exchange)
             coin = Coin.query.filter_by(symbol=symbol).first()
             if coin is None:
                 group = "primary" if symbol == primary_symbol else "alt"
-                coin = Coin(symbol=symbol, exchange=exchange, enabled=True, group_name=group)
+                coin = Coin(
+                    symbol=symbol,
+                    exchange=desired_exchange,
+                    enabled=True,
+                    group_name=group,
+                )
                 db.session.add(coin)
                 created_any = True
-                logger.info("Seeded coin %s (%s)", symbol, exchange)
+                logger.info("Seeded coin %s (%s)", symbol, desired_exchange)
+            elif symbol in DEFAULT_COIN_EXCHANGES and coin.exchange != desired_exchange:
+                coin.exchange = desired_exchange
+                updated_any = True
+                logger.info("Updated coin %s exchange -> %s", symbol, desired_exchange)
             result.append(coin)
 
-        if created_any:
+        if created_any or updated_any:
             db.session.commit()
+        if created_any:
             from app.services.strategy_service import StrategyService
 
             StrategyService().attach_new_enabled_coins_to_active_strategies()

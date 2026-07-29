@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from app.models import Coin, Strategy
 from app.services.candle_service import CandleService
 from app.services.coin_service import CoinService
-from app.services.exchange_service import ExchangeService, exchange_service_for_settings
+from app.services.exchange_service import ExchangeService, exchange_service_for_coin
 from app.services.settings_service import SettingsService
 from app.services.signal_service import SignalService
 from app.services.strategy_service import StrategyService
@@ -19,7 +19,7 @@ class ScannerService:
     """Fetch candles, evaluate strategies, emit signals for enabled USDT pairs."""
 
     def __init__(self) -> None:
-        self._exchange: ExchangeService | None = None
+        self._exchanges: dict[str, ExchangeService] = {}
         self.candles = CandleService()
         self.coins = CoinService()
         self.strategies = StrategyService()
@@ -27,11 +27,11 @@ class ScannerService:
         self.evaluator = StrategyEvaluator()
         self.settings = SettingsService()
 
-    @property
-    def exchange(self) -> ExchangeService:
-        if self._exchange is None:
-            self._exchange = exchange_service_for_settings()
-        return self._exchange
+    def _exchange_for(self, coin: Coin) -> ExchangeService:
+        key = (coin.exchange or "kraken").strip().lower()
+        if key not in self._exchanges:
+            self._exchanges[key] = exchange_service_for_coin(coin)
+        return self._exchanges[key]
 
     def run_scan(self) -> dict[str, int]:
         stats = {"coins": 0, "strategies": 0, "signals": 0, "errors": 0}
@@ -77,9 +77,10 @@ class ScannerService:
 
     def _scan_pair(self, coin: Coin, strategy: Strategy) -> bool:
         timeframe = strategy.timeframe or self.settings.get("default_timeframe", "1H")
-        bars = self.exchange.fetch_ohlcv(coin.symbol, timeframe, limit=300)
+        market = self._exchange_for(coin)
+        bars = market.fetch_ohlcv(coin.symbol, timeframe, limit=300)
         self.candles.upsert_bars(coin.id, timeframe, bars)
-        df = self.exchange.fetch_ohlcv_dataframe(coin.symbol, timeframe, limit=300)
+        df = market.fetch_ohlcv_dataframe(coin.symbol, timeframe, limit=300)
         if df.empty:
             return False
 

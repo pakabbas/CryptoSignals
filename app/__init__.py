@@ -105,4 +105,20 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         scheduler_service.start()
         atexit.register(scheduler_service.stop)
 
+        def _warmup_history_background() -> None:
+            import threading
+
+            def _run() -> None:
+                try:
+                    with app.app_context():
+                        from app.services.history_warmup_service import HistoryWarmupService
+
+                        HistoryWarmupService().ensure_all()
+                except Exception as exc:
+                    logging.getLogger(__name__).error("History warmup failed: %s", exc)
+
+            threading.Thread(target=_run, name="history-warmup", daemon=True).start()
+
+        _warmup_history_background()
+
     return app

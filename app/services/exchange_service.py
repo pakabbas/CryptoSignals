@@ -40,6 +40,12 @@ def exchange_service_for_settings() -> "ExchangeService":
     return ExchangeService(exchange_id=exchange_id)
 
 
+def exchange_service_for_coin(coin: Any) -> "ExchangeService":
+    """Use each coin's exchange (e.g. BTC on Binance, alts on Kraken)."""
+    exchange_id = getattr(coin, "exchange", None) or "kraken"
+    return ExchangeService(exchange_id=str(exchange_id))
+
+
 class ExchangeService:
     """Market data via CCXT (read-only OHLCV; multi-exchange ready)."""
 

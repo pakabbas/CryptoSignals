@@ -9,6 +9,7 @@ from app.backtester.engine import BacktestEngine
 from app.database import db
 from app.models import BacktestResult, Coin, Strategy
 from app.services.base import BaseService
+from app.services.exchange_service import exchange_service_for_coin
 from app.services.historical_download_service import HistoricalDownloadService
 from app.utils.logging_setup import get_logger
 
@@ -61,11 +62,18 @@ class BacktestService(BaseService[BacktestResult]):
         timeframe = strategy.timeframe
 
         if download:
-            self.downloader.download_and_store(coin.id, coin.symbol, timeframe, period_days)
+            self.downloader.download_and_store(
+                coin.id,
+                coin.symbol,
+                timeframe,
+                period_days,
+                exchange_id=coin.exchange,
+            )
 
         df = self.downloader.dataframe_from_db(coin.id, timeframe, period_days)
         if df.empty:
-            df = self.downloader.exchange.fetch_ohlcv_dataframe(coin.symbol, timeframe, limit=500)
+            market = exchange_service_for_coin(coin)
+            df = market.fetch_ohlcv_dataframe(coin.symbol, timeframe, limit=500)
         if df.empty:
             raise ValueError("No historical data available for backtest")
 

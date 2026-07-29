@@ -45,11 +45,19 @@ class CandleService(BaseService[HistoricalCandle]):
         return stored
 
     def list_bars(self, coin_id: int, timeframe: str, limit: int = 300) -> list[HistoricalCandle]:
-        return (
+        rows = (
             HistoricalCandle.query.filter_by(coin_id=coin_id, timeframe=timeframe)
-            .order_by(HistoricalCandle.open_time.asc())
+            .order_by(HistoricalCandle.open_time.desc())
             .limit(limit)
             .all()
+        )
+        return list(reversed(rows))
+
+    def count_bars_since(self, coin_id: int, timeframe: str, since: datetime) -> int:
+        return (
+            HistoricalCandle.query.filter_by(coin_id=coin_id, timeframe=timeframe)
+            .filter(HistoricalCandle.open_time >= since)
+            .count()
         )
 
     def latest_open_time(self, coin_id: int, timeframe: str) -> datetime | None:
