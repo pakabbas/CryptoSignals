@@ -193,6 +193,7 @@ jobs:
             'cd /var/www/cryptosignals && HISTORY_WARMUP_DAYS=7 /var/www/cryptosignals/.venv/bin/python /var/www/cryptosignals/deploy/warmup_history.py'
 
       - name: Apply indicators.md reset (BTC/SOL + clear history)
+        continue-on-error: true
         env:
           SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
           SSH_USER: ${{ secrets.GCP_SSH_USER }}

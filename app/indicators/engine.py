@@ -14,11 +14,20 @@ def _length(params: dict[str, Any], default: int = 14) -> int:
     return int(params.get("length", default))
 
 
+def _numeric_frame(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    for col in ("open", "high", "low", "close", "volume"):
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce")
+    return out
+
+
 def _ema_series(series: pd.Series, length: int) -> pd.Series:
-    return series.ewm(span=length, adjust=False).mean()
+    return pd.to_numeric(series, errors="coerce").ewm(span=length, adjust=False).mean()
 
 
 def _rsi_series(close: pd.Series, length: int) -> pd.Series:
+    close = pd.to_numeric(close, errors="coerce")
     delta = close.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
@@ -44,7 +53,7 @@ class IndicatorRegistry:
         if key not in self._computers:
             raise KeyError(f"Unknown indicator: {name}")
         params = params or {}
-        return self._computers[key](df, params)
+        return self._computers[key](_numeric_frame(df), params)
 
     def names(self) -> list[str]:
         return sorted(self._computers.keys())
@@ -122,6 +131,7 @@ class IndicatorRegistry:
         source = params.get("source", "close")
         out = df.copy()
         series = out["volume"] if source == "volume" else out["close"]
+        series = pd.to_numeric(series, errors="coerce")
         out[f"SMA_{source}_{length}"] = series.rolling(length).mean()
         return out
 
