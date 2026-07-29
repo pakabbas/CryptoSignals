@@ -91,6 +91,12 @@ class BacktestService(BaseService[BacktestResult]):
         logger.info("Backtest saved id=%s strategy=%s coin=%s", result.id, strategy.name, coin.symbol)
         return result
 
+    def delete_all(self) -> int:
+        deleted = BacktestResult.query.delete()
+        db.session.commit()
+        logger.info("Deleted %s backtest results", deleted)
+        return int(deleted or 0)
+
     def get(self, result_id: int) -> BacktestResult:
         return BacktestResult.query.get_or_404(result_id)
 

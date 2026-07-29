@@ -190,6 +190,15 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             'cd /var/www/cryptosignals && HISTORY_WARMUP_DAYS=7 /var/www/cryptosignals/.venv/bin/python /var/www/cryptosignals/deploy/warmup_history.py'
 
+      - name: Reset and run 16 baseline backtests
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            'cd /var/www/cryptosignals && BASELINE_BACKTEST_DAYS=7 /var/www/cryptosignals/.venv/bin/python /var/www/cryptosignals/deploy/reset_baseline_backtests.py'
+
       - name: Health check
         env:
           SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
