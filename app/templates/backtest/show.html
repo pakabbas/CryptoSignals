@@ -17,22 +17,116 @@
 </div>
 
 <div class="row g-3 mb-3">
-  {% for label, key in [
-    ('Total trades', 'total_trades'),
-    ('Win rate', 'win_rate'),
-    ('Return %', 'return_pct'),
-    ('Profit factor', 'profit_factor'),
-    ('Max drawdown %', 'maximum_drawdown'),
-    ('Buy signals', 'buy_signals'),
-    ('Sell signals', 'sell_signals'),
-  ] %}
-  <div class="col-md-3 col-6">
-    <div class="card shadow-sm h-100"><div class="card-body">
-      <div class="text-secondary small">{{ label }}</div>
-      <div class="fw-semibold">{{ metrics.get(key, '—') }}{% if key == 'win_rate' %}%{% endif %}</div>
-    </div></div>
+  <div class="col-md-3 col-6"><div class="card shadow-sm h-100 border-0"><div class="card-body">
+    <div class="text-secondary small">Total trades</div>
+    <div class="fw-semibold">{{ metrics.get('total_trades', 0) }}</div>
+  </div></div></div>
+  <div class="col-md-3 col-6"><div class="card shadow-sm h-100 border-0"><div class="card-body">
+    <div class="text-secondary small">Wins / Losses</div>
+    <div class="fw-semibold">{{ metrics.get('winning_trades', 0) }} / {{ metrics.get('losing_trades', 0) }}</div>
+  </div></div></div>
+  <div class="col-md-3 col-6"><div class="card shadow-sm h-100 border-0"><div class="card-body">
+    <div class="text-secondary small">Win rate</div>
+    <div class="fw-semibold">{{ '%.2f'|format(metrics.get('win_rate', 0)|float) }}%</div>
+  </div></div></div>
+  <div class="col-md-3 col-6"><div class="card shadow-sm h-100 border-0"><div class="card-body">
+    <div class="text-secondary small">Return</div>
+    <div class="fw-semibold">{{ '%.2f'|format(metrics.get('return_pct', 0)|float) }}%</div>
+  </div></div></div>
+  <div class="col-md-3 col-6"><div class="card shadow-sm h-100 border-0"><div class="card-body">
+    <div class="text-secondary small">Profit factor</div>
+    <div class="fw-semibold">{{ '%.2f'|format(metrics.get('profit_factor', 0)|float) }}</div>
+  </div></div></div>
+  <div class="col-md-3 col-6"><div class="card shadow-sm h-100 border-0"><div class="card-body">
+    <div class="text-secondary small">Max drawdown</div>
+    <div class="fw-semibold">{{ '%.2f'|format(metrics.get('maximum_drawdown', 0)|float) }}%</div>
+  </div></div></div>
+  <div class="col-md-3 col-6"><div class="card shadow-sm h-100 border-0"><div class="card-body">
+    <div class="text-secondary small">Buy signals</div>
+    <div class="fw-semibold">{{ metrics.get('buy_signals', 0) }}</div>
+  </div></div></div>
+  <div class="col-md-3 col-6"><div class="card shadow-sm h-100 border-0"><div class="card-body">
+    <div class="text-secondary small">Sell signals</div>
+    <div class="fw-semibold">{{ metrics.get('sell_signals', 0) }}</div>
+  </div></div></div>
+</div>
+
+<div class="card shadow-sm mb-3 border-0">
+  <div class="card-header fw-semibold bg-transparent">Performance summary</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Metric</th>
+          <th class="text-end">Value</th>
+          <th>Metric</th>
+          <th class="text-end">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-secondary">No. of trades</td>
+          <td class="text-end fw-semibold">{{ metrics.get('total_trades', 0) }}</td>
+          <td class="text-secondary">Win rate</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('win_rate', 0)|float) }}%</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Wins</td>
+          <td class="text-end fw-semibold">{{ metrics.get('winning_trades', 0) }}</td>
+          <td class="text-secondary">Losses</td>
+          <td class="text-end fw-semibold">{{ metrics.get('losing_trades', 0) }}</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Return</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('return_pct', 0)|float) }}%</td>
+          <td class="text-secondary">Profit factor</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('profit_factor', 0)|float) }}</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Gross profit</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('profit_pct', 0)|float) }}%</td>
+          <td class="text-secondary">Gross loss</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('loss_pct', 0)|float) }}%</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Average win</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('average_win', 0)|float) }}%</td>
+          <td class="text-secondary">Average loss</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('average_loss', 0)|float) }}%</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Largest win</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('largest_win', 0)|float) }}%</td>
+          <td class="text-secondary">Largest loss</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('largest_loss', 0)|float) }}%</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Max drawdown</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(metrics.get('maximum_drawdown', 0)|float) }}%</td>
+          <td class="text-secondary">Avg trade duration</td>
+          <td class="text-end fw-semibold">{{ '%.1f'|format(metrics.get('average_trade_duration_bars', 0)|float) }} bars</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Longest win streak</td>
+          <td class="text-end fw-semibold">{{ metrics.get('longest_winning_streak', 0) }}</td>
+          <td class="text-secondary">Longest loss streak</td>
+          <td class="text-end fw-semibold">{{ metrics.get('longest_losing_streak', 0) }}</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Buy signals</td>
+          <td class="text-end fw-semibold">{{ metrics.get('buy_signals', 0) }}</td>
+          <td class="text-secondary">Sell signals</td>
+          <td class="text-end fw-semibold">{{ metrics.get('sell_signals', 0) }}</td>
+        </tr>
+        <tr>
+          <td class="text-secondary">Initial equity</td>
+          <td class="text-end fw-semibold">{{ metrics.get('initial_equity', 0) }}</td>
+          <td class="text-secondary">Final equity</td>
+          <td class="text-end fw-semibold">{{ metrics.get('final_equity', 0) }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
-  {% endfor %}
 </div>
 
 <div class="card shadow-sm mb-3">
