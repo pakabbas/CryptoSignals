@@ -64,3 +64,17 @@ def last_closed_bar_index(open_times: list[datetime], timeframe: str, now: datet
     if last_idx == 0:
         raise ValueError("No closed candle available")
     return last_idx - 1
+
+
+def next_candle_close_utc(
+    last_bar_open: datetime,
+    timeframe: str,
+    now: datetime | None = None,
+) -> datetime:
+    """When the current forming candle closes (next evaluation moment for signals)."""
+    now = now or datetime.now(timezone.utc)
+    if last_bar_open.tzinfo is None:
+        last_bar_open = last_bar_open.replace(tzinfo=timezone.utc)
+    if not is_candle_closed(last_bar_open, timeframe, now):
+        return candle_close_time(last_bar_open, timeframe)
+    return candle_close_time(last_bar_open, timeframe) + timeframe_duration(timeframe)

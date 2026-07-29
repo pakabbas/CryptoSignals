@@ -1,0 +1,135 @@
+.scanner-hero {
+  background: linear-gradient(135deg, #0d6efd22 0%, #19875411 100%);
+  border-radius: 1rem;
+  border: 1px solid rgba(13, 110, 253, 0.15);
+}
+
+.scanner-coin-card {
+  border-radius: 0.85rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.scanner-coin-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08);
+}
+
+.scanner-sparkline {
+  height: 48px;
+  width: 100%;
+}
+
+.scanner-strategy-card {
+  border-radius: 0.85rem;
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color);
+}
+
+.scanner-strategy-card.signal-ready {
+  border-color: var(--bs-success);
+  box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.2);
+}
+
+.scanner-strategy-card.signal-sell {
+  border-color: var(--bs-danger);
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.scanner-ring {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--ring-color, var(--bs-primary)) calc(var(--pct) * 1%),
+    var(--bs-secondary-bg-subtle) 0
+  );
+}
+
+.scanner-ring::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--bs-body-bg);
+}
+
+.scanner-ring-label {
+  position: relative;
+  z-index: 1;
+  font-size: 0.95rem;
+}
+
+.scanner-rule {
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.35rem;
+  border: 1px solid transparent;
+}
+
+.scanner-rule-met {
+  background: rgba(25, 135, 84, 0.1);
+  border-color: rgba(25, 135, 84, 0.25);
+}
+
+.scanner-rule-pending {
+  background: rgba(108, 117, 125, 0.08);
+  border-color: rgba(108, 117, 125, 0.15);
+}
+
+.scanner-rule-icon {
+  flex-shrink: 0;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.scanner-rule-met .scanner-rule-icon {
+  background: var(--bs-success);
+  color: #fff;
+}
+
+.scanner-rule-pending .scanner-rule-icon {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+  border: 1px dashed var(--bs-border-color);
+}
+
+.scanner-countdown {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+.scanner-indicator-pill {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  white-space: nowrap;
+}
+
+.scanner-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bs-success);
+  animation: scanner-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes scanner-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}

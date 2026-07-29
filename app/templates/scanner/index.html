@@ -1,106 +1,214 @@
 {% extends "base.html" %}
+{% from "scanner/_macros.html" import progress_ring, rule_list %}
 {% block title %}Scanner · Crypto Signal Bot{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<link href="{{ url_for('static', filename='css/scanner.css') }}" rel="stylesheet">
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
   <div>
-    <h1 class="h3 mb-1">Live scanner</h1>
-    <p class="text-secondary mb-0">Binance OHLCV · closed-candle signals · BTC/USDT</p>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span class="scanner-live-dot" aria-hidden="true"></span>
+      <h1 class="h3 mb-0">Live scanner</h1>
+    </div>
+    <p class="text-secondary mb-0">Real-time prices, indicator values, and rule progress · signals fire on <strong>candle close</strong></p>
   </div>
-  <form method="post" action="{{ url_for('scanner.run_now') }}">
-    <button type="submit" class="btn btn-primary">Run scan now</button>
-  </form>
+  <div class="d-flex flex-wrap gap-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="scannerRefreshBtn">Refresh data</button>
+    <form method="post" action="{{ url_for('scanner.run_now') }}" class="d-inline">
+      <button type="submit" class="btn btn-primary">Run scan now</button>
+    </form>
+  </div>
 </div>
 
 <div class="row g-3 mb-4">
   <div class="col-md-4">
-    <div class="card shadow-sm h-100">
+    <div class="card shadow-sm h-100 border-0">
       <div class="card-body">
-        <div class="text-secondary small">Status</div>
+        <div class="text-secondary small">Scanner status</div>
         <div class="fw-semibold">{{ runtime.scanner_status }}</div>
       </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card shadow-sm h-100">
+    <div class="card shadow-sm h-100 border-0">
       <div class="card-body">
-        <div class="text-secondary small">Last scan</div>
+        <div class="text-secondary small">Last automated scan</div>
         <div class="fw-semibold">{{ runtime.last_scan_time }}</div>
       </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card shadow-sm h-100">
+    <div class="card shadow-sm h-100 border-0">
       <div class="card-body">
-        <div class="text-secondary small">Interval</div>
+        <div class="text-secondary small">Poll interval</div>
         <div class="fw-semibold">{{ runtime.scanner_interval_seconds }}s</div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="row g-3">
-  <div class="col-lg-6">
-    <div class="card shadow-sm">
-      <div class="card-header bg-transparent fw-semibold">Monitored coins</div>
-      <ul class="list-group list-group-flush">
-        {% for coin in coins %}
-          <li class="list-group-item d-flex justify-content-between">
-            <span>{{ coin.symbol }}</span>
-            <span class="badge text-bg-success">Enabled</span>
-          </li>
-        {% else %}
-          <li class="list-group-item text-secondary">No enabled coins.</li>
-        {% endfor %}
-      </ul>
+<section class="scanner-hero p-3 p-md-4 mb-4">
+  <h2 class="h5 mb-3">Market snapshot</h2>
+  <div class="row g-3">
+    {% for t in tickers %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card scanner-coin-card shadow-sm h-100 border-0">
+        <div class="card-body">
+          {% if t.error %}
+          <div class="text-danger small">{{ t.symbol }} — {{ t.error }}</div>
+          {% else %}
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="text-secondary small">{{ t.symbol }} · {{ t.timeframe }}</div>
+              <div class="display-6 fw-bold mb-0">${{ "{:,.2f}".format(t.price) if t.price else "—" }}</div>
+              {% if t.change_pct is not none %}
+              <span class="badge {% if t.change_pct >= 0 %}text-bg-success{% else %}text-bg-danger{% endif %} mt-1">
+                {% if t.change_pct >= 0 %}+{% endif %}{{ "%.2f"|format(t.change_pct) }}% vs prev candle
+              </span>
+              {% endif %}
+            </div>
+            {% if t.volume %}
+            <div class="text-end small">
+              <div class="text-secondary">Volume</div>
+              <div class="fw-semibold">{{ "{:,.0f}".format(t.volume) }}</div>
+            </div>
+            {% endif %}
+          </div>
+          {% if t.sparkline_points %}
+          <svg class="scanner-sparkline mt-3" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+            <polyline fill="none" stroke="var(--bs-primary)" stroke-width="2" points="{{ t.sparkline_points }}"/>
+          </svg>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
     </div>
+    {% else %}
+    <div class="col-12 text-secondary">No enabled coins to display.</div>
+    {% endfor %}
   </div>
+</section>
+
+<h2 class="h5 mb-3">Strategy readiness</h2>
+<p class="text-secondary small mb-3">
+  Each card shows how many BUY/SELL rules are <strong>met</strong> vs <strong>pending</strong> on the last <em>closed</em> candle.
+  A full signal triggers when all rules in that block match (respecting AND/OR logic). Next check: when the current candle closes.
+</p>
+
+<div class="row g-3 mb-4">
+  {% for view in live_views %}
+  {% set buy = side_progress(view.long) %}
+  {% set sell = side_progress(view.short) %}
   <div class="col-lg-6">
-    <div class="card shadow-sm">
-      <div class="card-header bg-transparent fw-semibold">Strategies</div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Name</th><th>TF</th><th>Status</th></tr></thead>
-          <tbody>
-            {% for s in strategies %}
-              <tr>
-                <td>{{ s.name }}</td>
-                <td>{{ s.timeframe }}</td>
-                <td>
-                  {% if s.enabled %}
-                    <span class="badge text-bg-success">On</span>
-                  {% else %}
-                    <span class="badge text-bg-secondary">Off</span>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div class="card scanner-strategy-card shadow-sm h-100 {% if view.signal_type == 'BUY' %}signal-ready{% elif view.signal_type == 'SELL' %}signal-sell{% endif %}">
+      <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+        <div>
+          <div class="fw-semibold">{{ view.strategy_name }}</div>
+          <div class="small text-secondary">{{ view.coin_symbol }} · {{ view.timeframe }}
+            {% if not view.enabled %}<span class="badge text-bg-secondary ms-1">Disabled</span>{% endif %}
+          </div>
+        </div>
+        {% if view.signal_type %}
+        <span class="badge fs-6 {% if view.signal_type == 'BUY' %}text-bg-success{% else %}text-bg-danger{% endif %}">
+          {{ view.signal_type }} ready
+        </span>
+        {% elif view.enabled %}
+        <span class="badge text-bg-warning text-dark">Watching</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if view.error %}
+        <div class="alert alert-warning py-2 small mb-0">{{ view.error }}</div>
+        {% elif not view.enabled %}
+        <p class="text-secondary small mb-0">Enable this strategy to see live rule progress.</p>
+        {% else %}
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+          <div>
+            <div class="text-secondary small">Last closed candle price</div>
+            <div class="fs-4 fw-bold">${{ "{:,.2f}".format(view.price) if view.price else "—" }}</div>
+            {% if view.evaluated_at %}
+            <div class="small text-secondary">Evaluated {{ view.evaluated_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+            {% endif %}
+          </div>
+          {% if view.next_close_at %}
+          <div class="text-end">
+            <div class="text-secondary small">Next candle close</div>
+            <div class="scanner-countdown fs-5 fw-semibold text-primary" data-next-close="{{ view.next_close_at.isoformat() }}">—</div>
+            <div class="small text-secondary">Then rules can trigger</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-around gap-3 mb-3 pb-3 border-bottom">
+          {% if view.long %}
+          {{ progress_ring(buy.pct, buy.met, buy.total, 'BUY rules (' ~ buy.logic ~ ')', 'success') }}
+          {% endif %}
+          {% if view.short %}
+          {{ progress_ring(sell.pct, sell.met, sell.total, 'SELL rules (' ~ sell.logic ~ ')', 'danger') }}
+          {% endif %}
+        </div>
+
+        {% if view.indicator_values %}
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          {% for key, val in view.indicator_values.items() %}
+            {% if key != 'close' and key != 'volume' and loop.index <= 8 %}
+            <span class="scanner-indicator-pill"><span class="text-secondary">{{ key }}</span> {% if val >= 1 or val <= -1 %}{{ "%.2f"|format(val) }}{% else %}{{ "%.4f"|format(val) }}{% endif %}</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="row g-3">
+          {% if view.long %}
+          <div class="col-md-6">
+            <div class="small fw-semibold text-success mb-2">BUY · {{ buy.met }} met · {{ buy.pending }} pending</div>
+            {{ rule_list(view.long) }}
+          </div>
+          {% endif %}
+          {% if view.short %}
+          <div class="col-md-6">
+            <div class="small fw-semibold text-danger mb-2">SELL · {{ sell.met }} met · {{ sell.pending }} pending</div>
+            {{ rule_list(view.short) }}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
+  {% else %}
+  <div class="col-12 text-secondary">No strategy/coin pairs to monitor.</div>
+  {% endfor %}
 </div>
 
-<div class="card shadow-sm mt-3">
-  <div class="card-header bg-transparent fw-semibold">Recent signals from scanner</div>
-  <div class="card-body table-responsive">
-    <table class="table table-sm align-middle">
-      <thead><tr><th>Time</th><th>Coin</th><th>Type</th><th>TF</th><th>Price</th><th>Email</th></tr></thead>
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-transparent fw-semibold">Recent signals</div>
+  <div class="card-body table-responsive-sticky p-0">
+    <table class="table table-sm align-middle mb-0">
+      <thead class="table-light"><tr><th>Time</th><th>Coin</th><th>Type</th><th>TF</th><th>Price</th><th>Email</th></tr></thead>
       <tbody>
         {% for signal in recent_signals %}
-          <tr>
-            <td>{{ signal.candle_time }}</td>
-            <td>{{ signal.coin.symbol if signal.coin else '—' }}</td>
-            <td><span class="badge {% if signal.signal_type == 'BUY' %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ signal.signal_type }}</span></td>
-            <td>{{ signal.timeframe }}</td>
-            <td>{{ signal.price }}</td>
-            <td>{% if signal.notified %}Sent{% else %}—{% endif %}</td>
-          </tr>
+        <tr>
+          <td>{{ signal.candle_time }}</td>
+          <td>{{ signal.coin.symbol if signal.coin else '—' }}</td>
+          <td><span class="badge {% if signal.signal_type == 'BUY' %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ signal.signal_type }}</span></td>
+          <td>{{ signal.timeframe }}</td>
+          <td>{{ signal.price }}</td>
+          <td>{% if signal.notified %}Sent{% else %}—{% endif %}</td>
+        </tr>
         {% else %}
-          <tr><td colspan="6" class="text-secondary">No signals yet.</td></tr>
+        <tr><td colspan="6" class="text-secondary p-3">No signals yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/scanner-live.js') }}"></script>
+<script>
+document.getElementById("scannerRefreshBtn")?.addEventListener("click", () => location.reload());
+setInterval(() => location.reload(), {{ runtime.scanner_interval_seconds * 1000 }});
+</script>
 {% endblock %}

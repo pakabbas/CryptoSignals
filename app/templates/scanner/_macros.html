@@ -1,0 +1,27 @@
+{% macro progress_ring(pct, met, total, label, color_class) %}
+<div class="scanner-ring-wrap text-center">
+  <div class="scanner-ring position-relative d-inline-flex align-items-center justify-content-center" style="--pct: {{ pct }}; --ring-color: var(--bs-{{ color_class }});">
+    <span class="scanner-ring-label fw-bold">{{ met }}/{{ total }}</span>
+  </div>
+  <div class="small text-secondary mt-1">{{ label }}</div>
+  <div class="small fw-semibold">{{ pct }}% met</div>
+</div>
+{% endmacro %}
+
+{% macro rule_list(side) %}
+{% if side and side.rules %}
+<ul class="list-unstyled scanner-rules mb-0">
+  {% for rule in side.rules %}
+  <li class="scanner-rule {% if rule.met %}scanner-rule-met{% else %}scanner-rule-pending{% endif %}" title="{{ rule.detail }}">
+    <span class="scanner-rule-icon">{% if rule.met %}✓{% else %}○{% endif %}</span>
+    <span class="scanner-rule-text">
+      <span class="fw-medium">{{ rule.label }}</span>
+      <span class="d-block small text-secondary">{{ rule.detail }}</span>
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="text-secondary small mb-0">No rules configured.</p>
+{% endif %}
+{% endmacro %}
