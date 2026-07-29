@@ -47,6 +47,22 @@ python run.py
 
 Open [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 
+## Step 4 includes
+
+- Historical OHLCV downloader (7–365 days) into `historical_candles`
+- Backtest engine with simulated long/short trades from strategy signals
+- Full performance metrics (win rate, profit factor, drawdown, streaks, etc.)
+- Plotly charts: candlesticks with buy/sell markers, equity curve, drawdown
+- `/backtest/` run UI, report page, JSON export, side-by-side comparison
+
+## Step 3 includes
+
+- Visual strategy builder at `/strategies/` (BUY/SELL rules, AND/OR/NOT, per-rule NOT invert)
+- Rule types: indicator compare, MACD cross, Bollinger band touch
+- Save, edit, delete, clone, enable/disable, import/export JSON
+- Assign strategies to coins; scanner runs only assigned pairs (fallback: all enabled coins)
+- Preview on live BTC/USDT candles before saving
+
 ## Step 2 includes
 
 - Binance OHLCV via CCXT, stored in `historical_candles`

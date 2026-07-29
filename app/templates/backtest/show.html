@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Backtest report · Crypto Signal Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Backtest report #{{ result.id }}</h1>
+    <p class="text-secondary mb-0">
+      {{ result.strategy.name if result.strategy else result.strategy_id }}
+      · {{ result.coin.symbol if result.coin else result.coin_id }}
+      · {{ result.period_days }} days · {{ result.timeframe }}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('backtest.export', result_id=result.id) }}">Export JSON</a>
+    <a class="btn btn-link btn-sm" href="{{ url_for('backtest.index') }}">Back</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  {% for label, key in [
+    ('Total trades', 'total_trades'),
+    ('Win rate', 'win_rate'),
+    ('Return %', 'return_pct'),
+    ('Profit factor', 'profit_factor'),
+    ('Max drawdown %', 'maximum_drawdown'),
+    ('Buy signals', 'buy_signals'),
+    ('Sell signals', 'sell_signals'),
+  ] %}
+  <div class="col-md-3 col-6">
+    <div class="card shadow-sm h-100"><div class="card-body">
+      <div class="text-secondary small">{{ label }}</div>
+      <div class="fw-semibold">{{ metrics.get(key, '—') }}{% if key == 'win_rate' %}%{% endif %}</div>
+    </div></div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header fw-semibold">Candlestick + entry/exit markers</div>
+  <div class="card-body"><div id="candle-chart" style="height:420px"></div></div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Equity curve</div>
+      <div class="card-body"><div id="equity-chart" style="height:300px"></div></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">Drawdown</div>
+      <div class="card-body"><div id="drawdown-chart" style="height:300px"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header fw-semibold">Trades</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Side</th><th>Entry</th><th>Exit</th><th>PnL %</th><th>Bars</th></tr></thead>
+      <tbody>
+        {% for t in metrics.get('trades', []) %}
+          <tr>
+            <td>{{ t.side }}</td>
+            <td class="small">{{ t.entry_time }} @ {{ t.entry_price }}</td>
+            <td class="small">{{ t.exit_time }} @ {{ t.exit_price }}</td>
+            <td>{{ t.pnl_pct }}</td>
+            <td>{{ t.duration_bars }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-secondary">No closed trades.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+  const chartData = {{ chart_json | tojson }};
+  (function () {
+    const candles = chartData.candles || [];
+    if (candles.length) {
+      Plotly.newPlot('candle-chart', [{
+        x: candles.map(c => c.time),
+        open: candles.map(c => c.open),
+        high: candles.map(c => c.high),
+        low: candles.map(c => c.low),
+        close: candles.map(c => c.close),
+        type: 'candlestick',
+        name: 'OHLCV'
+      }], { margin: { t: 24, r: 16, b: 40, l: 48 }, xaxis: { rangeslider: { visible: false } } });
+      const markers = chartData.markers || [];
+      if (markers.length) {
+        const buys = markers.filter(m => m.type === 'buy');
+        const sells = markers.filter(m => m.type === 'sell');
+        Plotly.addTraces('candle-chart', [
+          { x: buys.map(m => m.time), y: buys.map(m => m.price), mode: 'markers', name: 'Buy', marker: { color: 'green', size: 9, symbol: 'triangle-up' } },
+          { x: sells.map(m => m.time), y: sells.map(m => m.price), mode: 'markers', name: 'Sell', marker: { color: 'red', size: 9, symbol: 'triangle-down' } },
+        ]);
+      }
+    }
+    const eq = chartData.equity_curve || [];
+    if (eq.length) {
+      Plotly.newPlot('equity-chart', [{ x: eq.map(p => p.time), y: eq.map(p => p.equity), type: 'scatter', mode: 'lines', name: 'Equity' }], { margin: { t: 24, r: 16, b: 40, l: 48 } });
+    }
+    const dd = chartData.drawdown_curve || [];
+    if (dd.length) {
+      Plotly.newPlot('drawdown-chart', [{ x: dd.map(p => p.time), y: dd.map(p => p.drawdown_pct), type: 'scatter', mode: 'lines', name: 'Drawdown %', line: { color: '#dc3545' } }], { margin: { t: 24, r: 16, b: 40, l: 48 } });
+    }
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Compare backtests · Crypto Signal Bot{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Compare backtests</h1>
+
+<form method="post" class="card shadow-sm mb-4">
+  <div class="card-body">
+    <label class="form-label">Select results to compare</label>
+    <div class="row">
+      {% for r in all_results %}
+        <div class="col-md-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="result_ids" value="{{ r.id }}" id="r{{ r.id }}"
+              {% if results and r.id in results|map(attribute='id')|list %}checked{% endif %}>
+            <label class="form-check-label" for="r{{ r.id }}">
+              #{{ r.id }} · {{ r.strategy.name if r.strategy else r.strategy_id }} · {{ r.period_days }}d
+            </label>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Compare</button>
+  </div>
+</form>
+
+{% if results %}
+<div class="table-responsive card shadow-sm">
+  <table class="table mb-0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Strategy</th>
+        <th>Coin</th>
+        <th>Return %</th>
+        <th>Win rate</th>
+        <th>Trades</th>
+        <th>Profit factor</th>
+        <th>Max DD %</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+        {% set m = r.metrics_json or {} %}
+        <tr>
+          <td><a href="{{ url_for('backtest.show', result_id=r.id) }}">#{{ r.id }}</a></td>
+          <td>{{ r.strategy.name if r.strategy else r.strategy_id }}</td>
+          <td>{{ r.coin.symbol if r.coin else r.coin_id }}</td>
+          <td>{{ m.get('return_pct', '—') }}</td>
+          <td>{{ '%.1f'|format(m.get('win_rate', 0)) }}%</td>
+          <td>{{ m.get('total_trades', 0) }}</td>
+          <td>{{ m.get('profit_factor', '—') }}</td>
+          <td>{{ m.get('maximum_drawdown', '—') }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

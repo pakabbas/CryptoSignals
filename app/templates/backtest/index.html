@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Backtesting · Crypto Signal Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Backtesting</h1>
+    <p class="text-secondary mb-0">Download history, simulate trades, view performance reports</p>
+  </div>
+  <a href="{{ url_for('backtest.compare') }}" class="btn btn-outline-secondary">Compare results</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header fw-semibold">Run backtest</div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('backtest.run') }}" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Strategy</label>
+        <select name="strategy_id" class="form-select" required>
+          {% for s in strategies %}
+            <option value="{{ s.id }}">{{ s.name }} ({{ s.timeframe }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Coin</label>
+        <select name="coin_id" class="form-select" required>
+          {% for c in coins %}
+            <option value="{{ c.id }}">{{ c.symbol }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">History period</label>
+        <select name="period_days" class="form-select">
+          {% for p in periods %}
+            <option value="{{ p }}" {% if p == 30 %}selected{% endif %}>{{ p }} days</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Run</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header fw-semibold">Recent backtests</div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Strategy</th>
+          <th>Coin</th>
+          <th>Period</th>
+          <th>Return %</th>
+          <th>Win rate</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+          {% set m = r.metrics_json or {} %}
+          <tr>
+            <td class="small">{{ r.created_at }}</td>
+            <td>{{ r.strategy.name if r.strategy else r.strategy_id }}</td>
+            <td>{{ r.coin.symbol if r.coin else r.coin_id }}</td>
+            <td>{{ r.period_days }}d · {{ r.timeframe }}</td>
+            <td>{{ m.get('return_pct', '—') }}</td>
+            <td>{{ '%.1f'|format(m.get('win_rate', 0)) }}%</td>
+            <td><a href="{{ url_for('backtest.show', result_id=r.id) }}">Report</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="text-secondary p-4">No backtests yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

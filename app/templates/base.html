@@ -20,10 +20,12 @@
           <li class="nav-item"><a class="nav-link" href="{{ url_for('scanner.index') }}">Scanner</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('signals.index') }}">Signals</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('coins.index') }}">BTC/USDT</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('settings.smtp') }}">SMTP</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('backtest.index') }}">Backtest</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('strategies.index') }}">Strategies</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('settings.general') }}">Settings</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('logs.index') }}">Logs</a></li>
         </ul>
-        <span class="navbar-text text-secondary small">Step 2 · Live scanner</span>
+        <span class="navbar-text text-secondary small">Step 4 · Backtesting</span>
       </div>
     </div>
   </nav>
@@ -45,5 +47,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

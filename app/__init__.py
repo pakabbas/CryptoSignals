@@ -11,6 +11,7 @@ from app.database import db
 from app.database.bootstrap import ensure_database_exists
 from app.database.migrate import apply_schema_patches
 from app.routes import (
+    backtest_bp,
     coins_bp,
     dashboard_bp,
     health_bp,
@@ -18,6 +19,7 @@ from app.routes import (
     scanner_bp,
     settings_bp,
     signals_bp,
+    strategies_bp,
 )
 from app.services.coin_service import CoinService
 from app.services.scheduler_service import SchedulerService
@@ -47,6 +49,8 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(logs_bp)
     app.register_blueprint(scanner_bp)
     app.register_blueprint(signals_bp)
+    app.register_blueprint(strategies_bp)
+    app.register_blueprint(backtest_bp)
 
     testing = app.config.get("TESTING") or os.getenv("TESTING", "").lower() in {
         "1",

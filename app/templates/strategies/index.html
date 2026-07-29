@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Strategies · Crypto Signal Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Strategies</h1>
+    <p class="text-secondary mb-0">Build, assign to coins, enable/disable, import/export JSON</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('strategies.import_strategy') }}" class="btn btn-outline-secondary">Import JSON</a>
+    <a href="{{ url_for('strategies.create') }}" class="btn btn-primary">New strategy</a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Timeframe</th>
+          <th>Coins</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for strategy in strategies %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ strategy.name }}</div>
+              {% if strategy.description %}
+                <div class="small text-secondary">{{ strategy.description }}</div>
+              {% endif %}
+            </td>
+            <td>{{ strategy.timeframe }}</td>
+            <td class="small">
+              {% if strategy.coins %}
+                {{ strategy.coins | map(attribute='symbol') | join(', ') }}
+              {% else %}
+                <span class="text-secondary">All enabled coins</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if strategy.enabled %}
+                <span class="badge text-bg-success">Enabled</span>
+              {% else %}
+                <span class="badge text-bg-secondary">Disabled</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                <a class="btn btn-outline-primary" href="{{ url_for('strategies.edit', strategy_id=strategy.id) }}">Edit</a>
+                <a class="btn btn-outline-secondary" href="{{ url_for('strategies.export', strategy_id=strategy.id) }}">Export</a>
+                <form method="post" action="{{ url_for('strategies.clone', strategy_id=strategy.id) }}" class="d-inline">
+                  <button type="submit" class="btn btn-outline-secondary">Clone</button>
+                </form>
+                <form method="post" action="{{ url_for('strategies.toggle', strategy_id=strategy.id) }}" class="d-inline">
+                  <button type="submit" class="btn btn-outline-warning">{% if strategy.enabled %}Disable{% else %}Enable{% endif %}</button>
+                </form>
+                <form method="post" action="{{ url_for('strategies.delete', strategy_id=strategy.id) }}" class="d-inline" onsubmit="return confirm('Delete this strategy?');">
+                  <button type="submit" class="btn btn-outline-danger">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-secondary p-4">No strategies yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

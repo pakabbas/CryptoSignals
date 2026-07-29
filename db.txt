@@ -205,9 +205,22 @@ Index:  (coin_id, timeframe, open_time) — name ix_candles_coin_tf_time
 Foreign keys: coin_id → coins(id)
 
 ================================================================================
+TABLE: strategy_coins (Step 3)
+================================================================================
+Purpose: Many-to-many — which coins a strategy monitors.
+
+Column       Type  Null  Notes
+-----------  ----  ----  ---------------------------
+strategy_id  INT   NO    PK, FK → strategies.id
+coin_id      INT   NO    PK, FK → coins.id
+
+If a strategy has no rows here, scanner uses all enabled coins (legacy fallback).
+
+================================================================================
 RELATIONSHIPS (summary)
 ================================================================================
 coins 1 — * signals
+coins * — * strategies (strategy_coins)
 coins 1 — * backtest_results
 coins 1 — * historical_candles
 

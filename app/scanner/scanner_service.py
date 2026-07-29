@@ -42,7 +42,10 @@ class ScannerService:
                 return stats
 
             for coin in enabled_coins:
-                for strategy in enabled_strategies:
+                coin_strategies = self.strategies.list_enabled_for_coin(coin.id)
+                if not coin_strategies:
+                    coin_strategies = enabled_strategies
+                for strategy in coin_strategies:
                     try:
                         if self._scan_pair(coin, strategy):
                             stats["signals"] += 1

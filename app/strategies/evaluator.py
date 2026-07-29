@@ -35,7 +35,20 @@ class StrategyEvaluator:
 
         bar_idx = last_closed_bar_index(list(df.index.to_pydatetime()), timeframe)
         enriched = self._enrich_dataframe(df, definition)
+        return self.evaluate_at_index(enriched, definition, bar_idx, pre_enriched=True)
 
+    def evaluate_at_index(
+        self,
+        df: pd.DataFrame,
+        definition: dict[str, Any],
+        bar_idx: int,
+        *,
+        pre_enriched: bool = False,
+    ) -> EvaluationResult:
+        if df.empty or bar_idx < 0 or bar_idx >= len(df):
+            raise ValueError("Invalid bar index for evaluation")
+
+        enriched = df if pre_enriched else self._enrich_dataframe(df, definition)
         long_block = definition.get("long")
         short_block = definition.get("short")
 
@@ -113,9 +126,16 @@ class StrategyEvaluator:
         results = [self._evaluate_rule(df, rule, bar_idx) for rule in rules]
         if logic == "OR":
             return any(results)
+        if logic == "NOT":
+            return not any(results)
         return all(results)
 
     def _evaluate_rule(self, df: pd.DataFrame, rule: dict[str, Any], bar_idx: int) -> bool:
+        negate = bool(rule.get("negate"))
+        result = self._evaluate_rule_inner(df, rule, bar_idx)
+        return not result if negate else result
+
+    def _evaluate_rule_inner(self, df: pd.DataFrame, rule: dict[str, Any], bar_idx: int) -> bool:
         rtype = rule.get("type")
         if rtype == "indicator_compare":
             left = self._resolve_value(df, rule.get("left", {}), bar_idx)

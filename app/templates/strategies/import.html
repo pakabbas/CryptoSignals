@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Import strategy · Crypto Signal Bot{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Import strategy JSON</h1>
+<form method="post" enctype="multipart/form-data" class="card shadow-sm">
+  <div class="card-body row g-3">
+    <div class="col-12">
+      <label class="form-label">Optional new name</label>
+      <input type="text" name="import_name" class="form-control" placeholder="Leave blank to use JSON name">
+    </div>
+    <div class="col-12">
+      <label class="form-label">JSON file</label>
+      <input type="file" name="import_file" class="form-control" accept="application/json,.json">
+    </div>
+    <div class="col-12">
+      <label class="form-label">Or paste JSON</label>
+      <textarea name="import_json" class="form-control font-monospace" rows="12" placeholder='{"name":"...","definition_json":{...}}'></textarea>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Import</button>
+      <a href="{{ url_for('strategies.index') }}" class="btn btn-link">Cancel</a>
+    </div>
+  </div>
+</form>
+{% endblock %}
