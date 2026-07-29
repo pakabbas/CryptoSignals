@@ -1,13 +1,12 @@
-import json
-
 import pytest
 
-from app.strategies.defaults import DEFAULT_BUY_STRATEGY
+from app.strategies.research_templates import RESEARCH_TEMPLATES
 from app.strategies.validator import StrategyValidationError, validate_definition
 
 
-def test_validate_default_buy_strategy():
-    validate_definition(DEFAULT_BUY_STRATEGY["definition_json"])
+@pytest.mark.parametrize("template", RESEARCH_TEMPLATES, ids=lambda t: t["name"])
+def test_validate_research_templates(template):
+    validate_definition(template["definition_json"])
 
 
 def test_validate_rejects_empty_rules():
@@ -18,10 +17,11 @@ def test_validate_rejects_empty_rules():
 def test_strategies_list_page(client):
     response = client.get("/strategies/")
     assert response.status_code == 200
-    assert b"Strategies" in response.data
+    assert b"Strategy templates" in response.data
+    assert b"15m" in response.data or b"Bollinger" in response.data
 
 
-def test_strategies_create_page(client):
-    response = client.get("/strategies/new")
+def test_strategies_create_blocked(client):
+    response = client.get("/strategies/new", follow_redirects=True)
     assert response.status_code == 200
-    assert b"BUY (long) rules" in response.data
+    assert b"fixed research templates" in response.data.lower() or b"Research" in response.data

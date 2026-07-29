@@ -65,6 +65,49 @@ class IndicatorRegistry:
         self.register("STOCHRSI", self._stochrsi)
         self.register("KELTNER", self._keltner)
         self.register("DONCHIAN", self._donchian)
+        self.register("ADX", self._adx)
+        self.register("ICHIMOKU", self._ichimoku)
+
+    @staticmethod
+    def _adx(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
+        length = _length(params, 14)
+        out = df.copy()
+        up = out["high"].diff()
+        down = -out["low"].diff()
+        plus_dm = up.where((up > down) & (up > 0), 0.0)
+        minus_dm = down.where((down > up) & (down > 0), 0.0)
+        prev_close = out["close"].shift(1)
+        tr = pd.concat(
+            [
+                out["high"] - out["low"],
+                (out["high"] - prev_close).abs(),
+                (out["low"] - prev_close).abs(),
+            ],
+            axis=1,
+        ).max(axis=1)
+        atr = tr.rolling(length).mean()
+        plus_di = 100 * (plus_dm.rolling(length).mean() / atr.replace(0, pd.NA))
+        minus_di = 100 * (minus_dm.rolling(length).mean() / atr.replace(0, pd.NA))
+        dx = (100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, pd.NA))
+        out[f"ADX_{length}"] = dx.rolling(length).mean()
+        return out
+
+    @staticmethod
+    def _ichimoku(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
+        out = df.copy()
+        high = out["high"]
+        low = out["low"]
+        tenkan = (high.rolling(9).max() + low.rolling(9).min()) / 2
+        kijun = (high.rolling(26).max() + low.rolling(26).min()) / 2
+        span_a = ((tenkan + kijun) / 2).shift(26)
+        span_b = ((high.rolling(52).max() + low.rolling(52).min()) / 2).shift(26)
+        cloud_top = pd.concat([span_a, span_b], axis=1).max(axis=1)
+        cloud_bottom = pd.concat([span_a, span_b], axis=1).min(axis=1)
+        out["ICHI_tenkan"] = tenkan
+        out["ICHI_kijun"] = kijun
+        out["ICHI_cloud_top"] = cloud_top
+        out["ICHI_cloud_bottom"] = cloud_bottom
+        return out
 
     @staticmethod
     def _ema(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:

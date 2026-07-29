@@ -230,6 +230,10 @@ class StrategyEvaluator:
             close = float(df["close"].iloc[bar_idx])
             bound = float(df[lower if band == "lower" else upper].iloc[bar_idx])
             return label, f"Close {self._fmt_num(close)} vs {band} {self._fmt_num(bound)}"
+        if rtype == "bb_reversion":
+            side = rule.get("side", "long")
+            label = f"Bollinger+RSI reversion ({side})"
+            return label, "Prior bar outside band, RSI extreme, close back inside"
         return "Rule", "Unknown rule type"
 
     def _snapshot_indicators(self, df: pd.DataFrame, bar_idx: int) -> dict[str, float]:
@@ -315,13 +319,43 @@ class StrategyEvaluator:
     def _specs_from_rule(self, rule: dict[str, Any]) -> list[dict[str, Any]]:
         specs: list[dict[str, Any]] = []
         for node in (rule.get("left"), rule.get("right")):
-            if isinstance(node, dict) and "name" in node and node["name"] != "volume":
-                specs.append(dict(node))
+            specs.extend(self._specs_from_node(node))
         if rule.get("type") == "macd_cross":
             specs.append({"name": "MACD", "fast": 12, "slow": 26, "signal": 9})
-        if rule.get("type") == "price_at_bb":
+        if rule.get("type") in {"price_at_bb", "bb_reversion"}:
             specs.append({"name": "BB", "length": 20, "std": 2.0})
+            specs.append({"name": "RSI", "length": 14})
         return specs
+
+    def _specs_from_node(self, node: dict[str, Any] | None) -> list[dict[str, Any]]:
+        if not isinstance(node, dict) or "name" not in node:
+            return []
+        name = str(node.get("name", "")).upper()
+        if name in {"VOLUME", "CLOSE"}:
+            return []
+        if name == "MACDH":
+            return [
+                {
+                    "name": "MACD",
+                    "fast": int(node.get("fast", 12)),
+                    "slow": int(node.get("slow", 26)),
+                    "signal": int(node.get("signal", 9)),
+                }
+            ]
+        if name == "MACD":
+            return [
+                {
+                    "name": "MACD",
+                    "fast": int(node.get("fast", 12)),
+                    "slow": int(node.get("slow", 26)),
+                    "signal": int(node.get("signal", 9)),
+                }
+            ]
+        if name.startswith("ICHI_"):
+            return [{"name": "ICHIMOKU"}]
+        if name == "ADX":
+            return [{"name": "ADX", "length": int(node.get("length", 14))}]
+        return [dict(node)]
 
     def _evaluate_block(self, df: pd.DataFrame, block: dict[str, Any], bar_idx: int) -> bool:
         logic = block.get("logic", "AND").upper()
@@ -383,28 +417,75 @@ class StrategyEvaluator:
             if band == "lower":
                 return close <= df[lower].iloc[bar_idx]
             return close >= df[upper].iloc[bar_idx]
+        if rtype == "bb_reversion":
+            return self._bb_reversion(df, rule, bar_idx)
         return False
+
+    def _bb_reversion(self, df: pd.DataFrame, rule: dict[str, Any], bar_idx: int) -> bool:
+        if bar_idx < 1:
+            return False
+        side = rule.get("side", "long")
+        lower = next((c for c in df.columns if c.startswith("BBL_")), None)
+        upper = next((c for c in df.columns if c.startswith("BBU_")), None)
+        rsi_col = next((c for c in df.columns if c.startswith("RSI_")), None)
+        if not lower or not upper or not rsi_col:
+            return False
+        prev_i = bar_idx - 1
+        prev_close = df["close"].iloc[prev_i]
+        curr_close = df["close"].iloc[bar_idx]
+        rsi = df[rsi_col].iloc[bar_idx]
+        if pd.isna(rsi):
+            return False
+        if side == "long":
+            return (
+                prev_close < df[lower].iloc[prev_i]
+                and float(rsi) < 30
+                and curr_close > df[lower].iloc[bar_idx]
+            )
+        return (
+            prev_close > df[upper].iloc[prev_i]
+            and float(rsi) > 70
+            and curr_close < df[upper].iloc[bar_idx]
+        )
 
     def _resolve_value(self, df: pd.DataFrame, node: dict[str, Any], bar_idx: int) -> float | None:
         if not node:
             return None
         if "value" in node:
             return float(node["value"])
-        name = node.get("name", "").upper()
-        if name == "VOLUME":
-            return float(df["volume"].iloc[bar_idx])
-        if name == "EMA":
+        offset = int(node.get("bar_offset", 0))
+        idx = bar_idx - offset
+        if idx < 0 or idx >= len(df):
+            return None
+        raw_name = str(node.get("name", ""))
+        name = raw_name.upper()
+        if name in {"VOLUME", "volume"} or raw_name.lower() == "volume":
+            return float(df["volume"].iloc[idx])
+        if raw_name.lower() == "close":
+            val = df["close"].iloc[idx]
+            return None if pd.isna(val) else float(val)
+        if raw_name.startswith("ICHI_"):
+            col = raw_name
+        elif name == "EMA":
             col = f"EMA_{int(node.get('length', 20))}"
         elif name == "SMA":
             source = node.get("source", "close")
             col = f"SMA_{source}_{int(node.get('length', 20))}"
         elif name == "RSI":
             col = f"RSI_{int(node.get('length', 14))}"
+        elif name == "MACDH":
+            f, s, sig = int(node.get("fast", 12)), int(node.get("slow", 26)), int(node.get("signal", 9))
+            col = f"MACDh_{f}_{s}_{sig}"
+        elif name == "MACD":
+            f, s, sig = int(node.get("fast", 12)), int(node.get("slow", 26)), int(node.get("signal", 9))
+            col = f"MACD_{f}_{s}_{sig}"
+        elif name == "ADX":
+            col = f"ADX_{int(node.get('length', 14))}"
         else:
-            col = name
+            col = raw_name if raw_name in df.columns else name
         if col not in df.columns:
             return None
-        val = df[col].iloc[bar_idx]
+        val = df[col].iloc[idx]
         if pd.isna(val):
             return None
         return float(val)

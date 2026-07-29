@@ -30,6 +30,13 @@ from app.strategies.validator import StrategyValidationError, validate_definitio
 
 strategies_bp = Blueprint("strategies", __name__, url_prefix="/strategies")
 
+TEMPLATES_ONLY = True
+
+
+def _block_custom_strategies():
+    flash("Strategies are fixed research templates (see Research.txt). Custom edits are disabled.", "warning")
+    return redirect(url_for("strategies.index"))
+
 
 def _parse_definition_from_form() -> dict:
     raw = request.form.get("definition_json", "").strip()
@@ -50,11 +57,17 @@ def _coin_ids_from_form() -> list[int]:
 @strategies_bp.route("/")
 def index():
     strategies = StrategyService().list_all()
-    return render_template("strategies/index.html", strategies=strategies)
+    return render_template(
+        "strategies/index.html",
+        strategies=strategies,
+        templates_only=TEMPLATES_ONLY,
+    )
 
 
 @strategies_bp.route("/new", methods=["GET", "POST"])
 def create():
+    if TEMPLATES_ONLY:
+        return _block_custom_strategies()
     service = StrategyService()
     coins = CoinService().list_coins()
 
@@ -93,6 +106,8 @@ def create():
 
 @strategies_bp.route("/<int:strategy_id>/edit", methods=["GET", "POST"])
 def edit(strategy_id: int):
+    if TEMPLATES_ONLY:
+        return _block_custom_strategies()
     service = StrategyService()
     strategy = service.get(strategy_id)
     coins = CoinService().list_coins()
@@ -134,6 +149,8 @@ def edit(strategy_id: int):
 
 @strategies_bp.route("/<int:strategy_id>/delete", methods=["POST"])
 def delete(strategy_id: int):
+    if TEMPLATES_ONLY:
+        return _block_custom_strategies()
     StrategyService().delete(strategy_id)
     flash("Strategy deleted.", "success")
     return redirect(url_for("strategies.index"))
@@ -141,6 +158,8 @@ def delete(strategy_id: int):
 
 @strategies_bp.route("/<int:strategy_id>/clone", methods=["POST"])
 def clone(strategy_id: int):
+    if TEMPLATES_ONLY:
+        return _block_custom_strategies()
     clone_row = StrategyService().clone(strategy_id)
     flash(f"Cloned as '{clone_row.name}'.", "success")
     return redirect(url_for("strategies.edit", strategy_id=clone_row.id))
@@ -157,6 +176,8 @@ def toggle(strategy_id: int):
 
 @strategies_bp.route("/<int:strategy_id>/export")
 def export(strategy_id: int):
+    if TEMPLATES_ONLY:
+        return _block_custom_strategies()
     payload = StrategyService().export_json(strategy_id)
     strategy = StrategyService().get(strategy_id)
     filename = f"{strategy.name.replace(' ', '_').lower()}.json"
@@ -169,6 +190,8 @@ def export(strategy_id: int):
 
 @strategies_bp.route("/import", methods=["GET", "POST"])
 def import_strategy():
+    if TEMPLATES_ONLY:
+        return _block_custom_strategies()
     if request.method == "POST":
         raw = request.form.get("import_json", "").strip()
         if not raw and "import_file" in request.files:
@@ -189,6 +212,8 @@ def import_strategy():
 
 @strategies_bp.route("/preview", methods=["POST"])
 def preview():
+    if TEMPLATES_ONLY:
+        return _block_custom_strategies()
     try:
         definition = _parse_definition_from_form()
         symbol = request.form.get("preview_symbol", "BTC/USDT")

@@ -7,7 +7,11 @@ from typing import Any
 from app.database import db
 from app.models import Coin, Strategy
 from app.services.base import BaseService
-from app.strategies.defaults import DEFAULT_STRATEGIES
+from app.strategies.research_templates import (
+    LEGACY_STRATEGY_NAMES,
+    RESEARCH_TEMPLATES,
+    RESEARCH_TEMPLATE_NAMES,
+)
 from app.strategies.validator import StrategyValidationError, validate_definition
 from app.utils.logging_setup import get_logger
 
@@ -16,21 +20,45 @@ logger = get_logger("strategy")
 
 class StrategyService(BaseService[Strategy]):
     def ensure_default_strategies(self) -> None:
-        for item in DEFAULT_STRATEGIES:
+        """Seed / refresh fixed Research.txt templates (replaces custom defaults)."""
+        self.ensure_research_templates()
+
+    def ensure_research_templates(self) -> None:
+        for item in RESEARCH_TEMPLATES:
+            validate_definition(item["definition_json"])
             existing = Strategy.query.filter_by(name=item["name"]).first()
             if existing:
-                continue
-            strategy = Strategy(
-                name=item["name"],
-                description=item.get("description"),
-                definition_json=item["definition_json"],
-                enabled=bool(item.get("enabled", False)),
-                timeframe=item.get("timeframe", "1H"),
-            )
-            db.session.add(strategy)
-            logger.info("Seeded strategy %s", item["name"])
+                existing.description = item.get("description")
+                existing.definition_json = item["definition_json"]
+                existing.timeframe = item["timeframe"]
+                existing.enabled = bool(item.get("enabled", True))
+            else:
+                strategy = Strategy(
+                    name=item["name"],
+                    description=item.get("description"),
+                    definition_json=item["definition_json"],
+                    enabled=bool(item.get("enabled", True)),
+                    timeframe=item.get("timeframe", "1H"),
+                )
+                db.session.add(strategy)
+                logger.info("Seeded research template %s", item["name"])
         db.session.commit()
-        self._assign_all_enabled_coins_to_defaults()
+
+        for legacy_name in LEGACY_STRATEGY_NAMES:
+            legacy = Strategy.query.filter_by(name=legacy_name).first()
+            if legacy:
+                legacy.enabled = False
+
+        for strategy in Strategy.query.all():
+            if strategy.name not in RESEARCH_TEMPLATE_NAMES:
+                strategy.enabled = False
+
+        enabled_coins = Coin.query.filter_by(enabled=True).all()
+        if enabled_coins:
+            for strategy in Strategy.query.filter(Strategy.name.in_(RESEARCH_TEMPLATE_NAMES)).all():
+                strategy.coins = list(enabled_coins)
+        db.session.commit()
+        logger.info("Research strategy templates synced to enabled coins")
 
     def attach_new_enabled_coins_to_active_strategies(self) -> None:
         """Add newly seeded enabled coins to strategies that already monitor at least one pair."""

@@ -7,7 +7,7 @@ class StrategyValidationError(ValueError):
     pass
 
 
-VALID_RULE_TYPES = {"indicator_compare", "macd_cross", "price_at_bb"}
+VALID_RULE_TYPES = {"indicator_compare", "macd_cross", "price_at_bb", "bb_reversion"}
 VALID_OPERATORS = {"gt", "gte", "lt", "lte", "eq", ">", ">=", "<", "<=", "=="}
 VALID_LOGIC = {"AND", "OR", "NOT"}
 
@@ -73,3 +73,8 @@ def _validate_rule(side_name: str, index: int, rule: dict[str, Any]) -> None:
         band = rule.get("band", "lower")
         if band not in {"lower", "upper"}:
             raise StrategyValidationError(f"Bollinger band must be lower or upper (rule {index + 1})")
+
+    if rtype == "bb_reversion":
+        side = rule.get("side", "long")
+        if side not in {"long", "short"}:
+            raise StrategyValidationError(f"bb_reversion side must be long or short (rule {index + 1})")
