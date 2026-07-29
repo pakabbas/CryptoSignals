@@ -8,7 +8,12 @@ APP_USER="${SUDO_USER:-$(whoami)}"
 cd "$APP_DIR"
 
 if [[ ! -f "$APP_DIR/.env" ]]; then
-  echo "WARNING: $APP_DIR/.env not found. Copy .env.example and set MySQL credentials on the server."
+  if [[ -f "$APP_DIR/.env.example" ]]; then
+    cp "$APP_DIR/.env.example" "$APP_DIR/.env"
+    echo "Created $APP_DIR/.env from .env.example — update MySQL credentials on the server."
+  else
+    echo "WARNING: $APP_DIR/.env not found."
+  fi
 fi
 
 if [[ ! -d "$APP_DIR/.venv" ]]; then

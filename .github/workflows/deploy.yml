@@ -57,6 +57,9 @@ jobs:
             deploy/nginx-cryptosignals.conf \
             "$SSH_USER@$SSH_HOST:/tmp/cryptosignals-nginx.conf"
           scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            deploy/nginx-cryptosignals-http-only.conf \
+            "$SSH_USER@$SSH_HOST:/tmp/cryptosignals-nginx-http.conf"
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
             deploy/remote-setup.sh \
             "$SSH_USER@$SSH_HOST:/tmp/cryptosignals-remote-setup.sh"
           scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
@@ -67,9 +70,15 @@ jobs:
             'chmod +x /var/www/cryptosignals/deploy/*.sh 2>/dev/null || true; bash /tmp/cryptosignals-remote-setup.sh'
 
       - name: Health check
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
         run: |
           sleep 8
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            'curl -fsSL http://127.0.0.1:5000/ | grep -q CryptoSignals'
           curl -4 -fsSL --retry 8 --retry-delay 3 \
             -A "CryptoSignals-Deploy-Check" \
-            "http://cryptosignals.btkdeals.com/" | grep -q "CryptoSignals"
+            "https://cryptosignals.btkdeals.com/" | grep -q "CryptoSignals"
           echo "Health check passed"
