@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+from typing import Any
+
+from sqlalchemy import text
 
 from app.backtester.engine import BacktestEngine
 from app.database import db
@@ -10,6 +13,34 @@ from app.services.historical_download_service import HistoricalDownloadService
 from app.utils.logging_setup import get_logger
 
 logger = get_logger("strategy")
+
+MAX_CHART_POINTS = 1200
+
+
+def trim_chart_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    """Keep DB rows and HTML responses bounded for long backtests."""
+    out = dict(metrics)
+    for key, max_len in (
+        ("candles", MAX_CHART_POINTS),
+        ("equity_curve", MAX_CHART_POINTS),
+        ("drawdown_curve", MAX_CHART_POINTS),
+        ("markers", 500),
+    ):
+        arr = out.get(key)
+        if isinstance(arr, list) and len(arr) > max_len:
+            step = max(1, len(arr) // max_len)
+            out[key] = arr[::step][:max_len]
+    return out
+
+
+def chart_payload_from_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    trimmed = trim_chart_metrics(metrics)
+    return {
+        "candles": trimmed.get("candles", []),
+        "markers": trimmed.get("markers", []),
+        "equity_curve": trimmed.get("equity_curve", []),
+        "drawdown_curve": trimmed.get("drawdown_curve", []),
+    }
 
 
 class BacktestService(BaseService[BacktestResult]):
@@ -39,12 +70,13 @@ class BacktestService(BaseService[BacktestResult]):
             raise ValueError("No historical data available for backtest")
 
         output = self.engine.run(df, strategy.definition_json, timeframe)
+        metrics = trim_chart_metrics(output.metrics)
         result = BacktestResult(
             strategy_id=strategy.id,
             coin_id=coin.id,
             timeframe=timeframe,
             period_days=period_days,
-            metrics_json=output.metrics,
+            metrics_json=metrics,
         )
         db.session.add(result)
         db.session.commit()
@@ -56,6 +88,51 @@ class BacktestService(BaseService[BacktestResult]):
 
     def list_recent(self, limit: int = 50) -> list[BacktestResult]:
         return BacktestResult.query.order_by(BacktestResult.created_at.desc()).limit(limit).all()
+
+    def list_recent_summaries(self, limit: int = 30) -> list[dict[str, Any]]:
+        """Lightweight rows for /backtest/ (avoids loading huge metrics_json blobs)."""
+        dialect = db.session.get_bind().dialect.name
+        if dialect == "mysql":
+            sql = text(
+                """
+                SELECT br.id, br.created_at, br.period_days, br.timeframe,
+                       JSON_UNQUOTE(JSON_EXTRACT(br.metrics_json, '$.return_pct')) AS return_pct,
+                       JSON_UNQUOTE(JSON_EXTRACT(br.metrics_json, '$.win_rate')) AS win_rate,
+                       s.name AS strategy_name, c.symbol AS coin_symbol
+                FROM backtest_results br
+                INNER JOIN strategies s ON s.id = br.strategy_id
+                INNER JOIN coins c ON c.id = br.coin_id
+                ORDER BY br.created_at DESC
+                LIMIT :lim
+                """
+            )
+        else:
+            sql = text(
+                """
+                SELECT br.id, br.created_at, br.period_days, br.timeframe,
+                       json_extract(br.metrics_json, '$.return_pct') AS return_pct,
+                       json_extract(br.metrics_json, '$.win_rate') AS win_rate,
+                       s.name AS strategy_name, c.symbol AS coin_symbol
+                FROM backtest_results br
+                INNER JOIN strategies s ON s.id = br.strategy_id
+                INNER JOIN coins c ON c.id = br.coin_id
+                ORDER BY br.created_at DESC
+                LIMIT :lim
+                """
+            )
+        rows = db.session.execute(sql, {"lim": limit}).mappings().all()
+        summaries: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            for key in ("return_pct", "win_rate"):
+                val = item.get(key)
+                if val is not None and not isinstance(val, (int, float)):
+                    try:
+                        item[key] = float(val)
+                    except (TypeError, ValueError):
+                        item[key] = 0.0
+            summaries.append(item)
+        return summaries
 
     def export_json(self, result_id: int) -> str:
         result = self.get(result_id)

@@ -11,9 +11,9 @@
         <div class="col-md-4">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="result_ids" value="{{ r.id }}" id="r{{ r.id }}"
-              {% if results and r.id in results|map(attribute='id')|list %}checked{% endif %}>
+              {% if results and r.id in (results|map(attribute='id')|list) %}checked{% endif %}>
             <label class="form-check-label" for="r{{ r.id }}">
-              #{{ r.id }} · {{ r.strategy.name if r.strategy else r.strategy_id }} · {{ r.period_days }}d
+              #{{ r.id }} · {{ r.strategy_name }} · {{ r.period_days }}d
             </label>
           </div>
         </div>

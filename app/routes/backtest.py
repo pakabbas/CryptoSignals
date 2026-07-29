@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, Response, flash, redirect, render_template, request, url_for
 
 from app.models import Coin
-from app.services.backtest_service import BacktestService
+from app.services.backtest_service import BacktestService, chart_payload_from_metrics
 from app.services.coin_service import CoinService
 from app.services.historical_download_service import BACKTEST_PERIODS_DAYS
 from app.services.strategy_service import StrategyService
@@ -13,10 +13,10 @@ backtest_bp = Blueprint("backtest", __name__, url_prefix="/backtest")
 
 @backtest_bp.route("/")
 def index():
-    results = BacktestService().list_recent(30)
+    service = BacktestService()
     return render_template(
         "backtest/index.html",
-        results=results,
+        results=service.list_recent_summaries(30),
         strategies=StrategyService().list_all(),
         coins=CoinService().list_coins(),
         periods=BACKTEST_PERIODS_DAYS,
@@ -48,12 +48,7 @@ def show(result_id: int):
         "backtest/show.html",
         result=result,
         metrics=metrics,
-        chart_json={
-            "candles": metrics.get("candles", []),
-            "markers": metrics.get("markers", []),
-            "equity_curve": metrics.get("equity_curve", []),
-            "drawdown_curve": metrics.get("drawdown_curve", []),
-        },
+        chart_json=chart_payload_from_metrics(metrics),
     )
 
 
@@ -79,5 +74,5 @@ def compare():
     return render_template(
         "backtest/compare.html",
         results=results,
-        all_results=BacktestService().list_recent(100),
+        all_results=BacktestService().list_recent_summaries(100),
     )
