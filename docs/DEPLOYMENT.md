@@ -45,6 +45,16 @@ docker compose up --build
 App: http://localhost:5000/  
 MySQL exposed on host port **3307** for debugging.
 
+## Exchange / geo-blocking (GCP US)
+
+Binance and Bybit often return 451/403 from US cloud IPs. Probe from the server:
+
+```bash
+.venv/bin/python deploy/probe_exchanges.py
+```
+
+Production default is **Kraken** (verified on GCP). **Binance US** also works from the same VM.
+
 ## Configuration backup
 
 Use **Settings → Backup & restore** or `GET /settings/backup/download` (authenticated session) to export JSON. Import merges settings and adds strategies; SMTP password must be supplied separately on import.

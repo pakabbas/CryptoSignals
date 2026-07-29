@@ -4,13 +4,21 @@ from typing import Any
 
 import ccxt
 
-# CCXT ids for future multi-exchange support (read-only OHLCV today).
+# CCXT ids for read-only OHLCV. Kraken/Binance US work from US GCP; Binance/Bybit often blocked.
 SUPPORTED_EXCHANGES: dict[str, dict[str, str]] = {
-    "binance": {"label": "Binance", "ccxt_id": "binance"},
-    "bybit": {"label": "Bybit", "ccxt_id": "bybit"},
     "kraken": {"label": "Kraken", "ccxt_id": "kraken"},
-    "okx": {"label": "OKX", "ccxt_id": "okx"},
+    "binanceus": {"label": "Binance US", "ccxt_id": "binanceus"},
     "kucoin": {"label": "KuCoin", "ccxt_id": "kucoin"},
+    "okx": {"label": "OKX", "ccxt_id": "okx"},
+    "gate": {"label": "Gate.io", "ccxt_id": "gate"},
+    "mexc": {"label": "MEXC", "ccxt_id": "mexc"},
+    "coinbase": {"label": "Coinbase", "ccxt_id": "coinbase"},
+    "bitstamp": {"label": "Bitstamp", "ccxt_id": "bitstamp"},
+    "gemini": {"label": "Gemini", "ccxt_id": "gemini"},
+    "htx": {"label": "HTX", "ccxt_id": "htx"},
+    "cryptocom": {"label": "Crypto.com", "ccxt_id": "cryptocom"},
+    "bybit": {"label": "Bybit (may block US IPs)", "ccxt_id": "bybit"},
+    "binance": {"label": "Binance (may block US IPs)", "ccxt_id": "binance"},
 }
 
 

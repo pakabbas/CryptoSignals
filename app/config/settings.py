@@ -43,7 +43,7 @@ class Config:
     DEBUG: bool = _env_bool("DEBUG_MODE", False) or os.getenv("FLASK_ENV") == "development"
 
     TIMEZONE: str = os.getenv("TIMEZONE", "UTC")
-    EXCHANGE: str = os.getenv("EXCHANGE", "binance")
+    EXCHANGE: str = os.getenv("EXCHANGE", "kraken")
     SCANNER_INTERVAL_SECONDS: int = int(os.getenv("SCANNER_INTERVAL_SECONDS", "60"))
     DEFAULT_TIMEFRAME: str = os.getenv("DEFAULT_TIMEFRAME", "1H")
     THEME: str = os.getenv("THEME", "light")

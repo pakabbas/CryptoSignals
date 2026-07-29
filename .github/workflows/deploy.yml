@@ -99,7 +99,7 @@ jobs:
             echo "TIMEZONE=UTC"
             echo "SCANNER_INTERVAL_SECONDS=60"
             echo "DEFAULT_TIMEFRAME=1H"
-            echo "EXCHANGE=bybit"
+            echo "EXCHANGE=kraken"
             echo "LOG_LEVEL=INFO"
             echo "DEBUG_MODE=false"
             echo "ENABLE_SCHEDULER=true"
