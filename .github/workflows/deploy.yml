@@ -181,6 +181,7 @@ jobs:
             "SMTP_HOST='${SMTP_HOST}' SMTP_PORT='${SMTP_PORT}' SMTP_USERNAME='${SMTP_USERNAME}' SMTP_PASSWORD='${SMTP_PASSWORD}' SMTP_FROM_NAME='${SMTP_FROM_NAME}' SMTP_FROM_EMAIL='${SMTP_FROM_EMAIL}' SMTP_TO_EMAIL='${SMTP_TO_EMAIL}' SMTP_USE_TLS='${SMTP_USE_TLS}' /var/www/cryptosignals/.venv/bin/python /var/www/cryptosignals/deploy/apply_smtp_env.py"
 
       - name: Warm up 7d candle history
+        continue-on-error: true
         env:
           SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
           SSH_USER: ${{ secrets.GCP_SSH_USER }}

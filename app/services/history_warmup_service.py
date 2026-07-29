@@ -81,19 +81,39 @@ class HistoryWarmupService:
             }
         try:
             # Skip indicator warmup bars — Kraken only retains ~720 candles (~7.5d of 15m).
-            stored = self.downloader.download_and_store(
-                coin.id,
-                coin.symbol,
-                timeframe,
-                days,
-                exchange_id=coin.exchange,
-                include_warmup=False,
-            )
+            exchange_id = coin.exchange
+            try:
+                stored = self.downloader.download_and_store(
+                    coin.id,
+                    coin.symbol,
+                    timeframe,
+                    days,
+                    exchange_id=exchange_id,
+                    include_warmup=False,
+                )
+            except Exception as primary_exc:
+                if (exchange_id or "").lower() == "kraken":
+                    raise
+                logger.warning(
+                    "History warmup %s via %s failed (%s); retrying Kraken",
+                    label,
+                    exchange_id,
+                    primary_exc,
+                )
+                exchange_id = "kraken"
+                stored = self.downloader.download_and_store(
+                    coin.id,
+                    coin.symbol,
+                    timeframe,
+                    days,
+                    exchange_id=exchange_id,
+                    include_warmup=False,
+                )
             have_after = self.candles.count_bars_since(coin.id, timeframe, since)
             status = "downloaded" if have_after >= int(expected * COVERAGE_RATIO) else "partial"
             return {
                 "coin": coin.symbol,
-                "exchange": coin.exchange,
+                "exchange": exchange_id,
                 "timeframe": timeframe,
                 "status": status,
                 "bars": have_after,

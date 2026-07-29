@@ -14,7 +14,7 @@ logger = get_logger("app")
 
 # Per-pair market data source (matches Coins UI on production).
 DEFAULT_COIN_EXCHANGES: dict[str, str] = {
-    "BTC/USDT": "binance",
+    "BTC/USDT": "kraken",
     "ETH/USDT": "kraken",
     "SOL/USDT": "kraken",
     "DOGE/USDT": "kraken",
