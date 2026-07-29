@@ -48,6 +48,32 @@ def _init_firebase() -> bool:
         return False
 
 
+def firebase_server_configured() -> bool:
+    """True if service account JSON or path is available (does not init SDK)."""
+    if not push_alerts_enabled():
+        return False
+    raw = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
+    path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "").strip()
+    if raw:
+        try:
+            json.loads(raw)
+            return True
+        except json.JSONDecodeError:
+            return False
+    return bool(path and os.path.isfile(path))
+
+
+def push_send_readiness() -> tuple[bool, str]:
+    """Whether server can send FCM and a short reason if not."""
+    if not push_alerts_enabled():
+        return False, "Push alerts are disabled on the server."
+    if not firebase_server_configured():
+        return False, "Firebase service account is missing on the server (GitHub secret FIREBASE_SERVICE_ACCOUNT_JSON)."
+    if not _init_firebase():
+        return False, "Firebase failed to start — check server logs."
+    return True, "OK"
+
+
 class PushNotificationService(BaseService[PushDevice]):
     def register_token(self, token: str, *, user_agent: str | None = None, label: str | None = None) -> PushDevice:
         token = token.strip()
@@ -81,11 +107,20 @@ class PushNotificationService(BaseService[PushDevice]):
     def list_devices(self) -> list[PushDevice]:
         return PushDevice.query.filter_by(enabled=True).order_by(PushDevice.updated_at.desc()).all()
 
-    def send_test(self) -> int:
-        return self._broadcast(
+    def send_test(self) -> tuple[int, str | None]:
+        ready, reason = push_send_readiness()
+        if not ready:
+            return 0, reason
+        devices = self.list_devices()
+        if not devices:
+            return 0, "No browser registered yet — click Enable notifications on this page first."
+        sent = self._broadcast(
             title="CryptoSignals test",
             body="Browser push is working. You will get alerts here when signals fire.",
         )
+        if sent:
+            return sent, None
+        return 0, "FCM rejected all tokens — enable notifications again on this browser."
 
     def send_signal_alert(
         self,

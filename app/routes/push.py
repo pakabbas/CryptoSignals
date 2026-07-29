@@ -5,7 +5,7 @@ import json
 from flask import Blueprint, Response, flash, jsonify, redirect, render_template, request, url_for
 
 from app.config.firebase_client import firebase_client_config, firebase_vapid_key, push_alerts_enabled
-from app.services.push_service import PushNotificationService
+from app.services.push_service import PushNotificationService, push_send_readiness
 
 push_bp = Blueprint("push", __name__)
 
@@ -37,13 +37,17 @@ self.addEventListener("notificationclick", function (event) {{
 
 @push_bp.route("/settings/notifications")
 def notifications_settings():
-    devices = PushNotificationService().list_devices()
+    svc = PushNotificationService()
+    devices = svc.list_devices()
+    server_ready, server_status = push_send_readiness()
     return render_template(
         "settings/notifications.html",
         devices=devices,
         firebase_config=firebase_client_config(),
         vapid_key=firebase_vapid_key(),
         push_enabled=push_alerts_enabled(),
+        server_ready=server_ready,
+        server_status=server_status,
     )
 
 
@@ -74,14 +78,11 @@ def unregister():
 @push_bp.route("/settings/notifications/test", methods=["POST"])
 def test_push():
     try:
-        count = PushNotificationService().send_test()
+        count, err = PushNotificationService().send_test()
         if count:
             flash(f"Test push sent to {count} device(s).", "success")
         else:
-            flash(
-                "No push sent. Enable notifications in this browser and ensure Firebase service account is on the server.",
-                "warning",
-            )
+            flash(err or "No push sent.", "warning")
     except Exception as exc:
         flash(f"Push test failed: {exc}", "danger")
     return redirect(url_for("push.notifications_settings"))

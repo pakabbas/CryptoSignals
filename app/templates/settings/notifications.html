@@ -9,6 +9,15 @@
 
 {{ settings_nav('notifications') }}
 
+<div class="alert {% if server_ready %}alert-success{% else %}alert-warning{% endif %} border-0 shadow-sm small mb-3">
+  <strong>Server:</strong>
+  {% if server_ready %}
+  Firebase is configured — push can be sent to registered browsers.
+  {% else %}
+  {{ server_status }}
+  {% endif %}
+</div>
+
 <div class="row g-3 mb-4">
   <div class="col-lg-7">
     <div class="card shadow-sm border-0">
