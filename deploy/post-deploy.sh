@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 APP_DIR="/var/www/cryptosignals"
@@ -43,6 +43,11 @@ if ! curl -fsSL http://127.0.0.1:5000/health | grep -q CryptoSignals; then
   sudo systemctl status "$SERVICE_NAME" --no-pager || true
   sudo journalctl -u "$SERVICE_NAME" -n 40 --no-pager || true
   exit 1
+fi
+
+echo "Warming 7d OHLCV for enabled coins (all timeframes)..."
+if ! HISTORY_WARMUP_DAYS=7 "$APP_DIR/.venv/bin/python" "$APP_DIR/deploy/warmup_history.py"; then
+  echo "WARNING: history warmup reported gaps — check warmup_history.py output"
 fi
 
 sudo nginx -t
