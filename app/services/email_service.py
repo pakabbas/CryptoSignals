@@ -5,6 +5,7 @@ from email.message import EmailMessage
 from email.utils import formataddr
 
 from app.models import SmtpSetting
+from app.risk.levels import format_risk_lines, levels_from_entry
 from app.services.base import BaseService
 from app.utils.logging_setup import get_logger
 
@@ -27,12 +28,14 @@ class EmailService(BaseService[SmtpSetting]):
             signal_type=signal_type,
             symbol=symbol.replace("/", ""),
         )
+        levels = levels_from_entry(signal_type, price)
         body = (
             "--------------------------------\n\n"
             f"{signal_type} Signal\n\n"
             f"Coin:\n{symbol.replace('/', '')}\n\n"
             f"Timeframe:\n{timeframe}\n\n"
             f"Price:\n{price}\n\n"
+            f"Risk:\n{format_risk_lines(levels)}\n\n"
             f"Strategy:\n{strategy_name}\n\n"
             f"Time:\n{candle_time_utc}\n\n"
             "--------------------------------"

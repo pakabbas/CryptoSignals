@@ -8,6 +8,7 @@ from app.config.alerts import push_alerts_enabled
 from app.database import db
 from app.models import PushDevice
 from app.services.base import BaseService
+from app.risk.levels import format_risk_lines, levels_from_entry
 from app.utils.logging_setup import get_logger
 
 logger = get_logger("app")
@@ -131,9 +132,26 @@ class PushNotificationService(BaseService[PushDevice]):
         price: float,
         strategy_name: str,
     ) -> int:
+        levels = levels_from_entry(signal_type, price)
         title = f"{signal_type} · {symbol}"
-        body = f"{strategy_name} · {timeframe} · ${price:,.2f}"
-        return self._broadcast(title=title, body=body, data={"url": "/signals/"})
+        body = (
+            f"{strategy_name} · {timeframe}\n"
+            f"{format_risk_lines(levels)}"
+        )
+        return self._broadcast(
+            title=title,
+            body=body,
+            data={
+                "url": "/signals/",
+                "signal_type": signal_type,
+                "symbol": symbol,
+                "entry": levels.entry,
+                "stop_loss": levels.stop_loss,
+                "take_profit": levels.take_profit,
+                "stop_loss_pct": levels.stop_loss_pct,
+                "take_profit_pct": levels.take_profit_pct,
+            },
+        )
 
     def _broadcast(self, *, title: str, body: str, data: dict[str, Any] | None = None) -> int:
         if not _init_firebase():
