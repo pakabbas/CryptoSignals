@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "settings/_nav.html" import settings_nav %}
+{% block title %}Settings · Crypto Signal Bot{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-2">
+  <div>
+    <h1 class="h3 mb-1">Settings</h1>
+    <p class="text-secondary mb-0">Configure the scanner, email alerts, and backups.</p>
+  </div>
+</div>
+
+{{ settings_nav('hub') }}
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <a href="{{ url_for('settings.general') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100 settings-hub-card border-0">
+        <div class="card-body">
+          <h2 class="h5 text-body">General</h2>
+          <p class="text-secondary small mb-0">Exchange, scanner interval, timeframe, theme, debug mode.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('settings.smtp') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100 settings-hub-card border-0 {% if not smtp_configured %}border border-warning{% endif %}">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <h2 class="h5 text-body mb-0">Email alerts</h2>
+            {% if smtp_configured %}
+            <span class="badge text-bg-success">Ready</span>
+            {% else %}
+            <span class="badge text-bg-warning text-dark">Setup needed</span>
+            {% endif %}
+          </div>
+          <p class="text-secondary small mt-2 mb-2">SMTP + the inbox that receives BUY/SELL signal emails.</p>
+          {% if smtp.receiver_email %}
+          <p class="small mb-0"><span class="text-secondary">Alerts go to:</span> <strong class="text-body">{{ smtp.receiver_email }}</strong></p>
+          {% else %}
+          <p class="small text-warning mb-0">No receiver email configured yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('settings.backup') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100 settings-hub-card border-0">
+        <div class="card-body">
+          <h2 class="h5 text-body">Backup &amp; restore</h2>
+          <p class="text-secondary small mb-0">Export or import strategies, coins, and app settings.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

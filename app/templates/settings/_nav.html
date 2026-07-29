@@ -1,0 +1,10 @@
+{% macro settings_nav(active) %}
+<nav class="nav nav-pills flex-column flex-sm-row gap-2 mb-4 settings-subnav" aria-label="Settings sections">
+  <a class="nav-link {% if active == 'hub' %}active{% endif %}" href="{{ url_for('settings.index') }}">Overview</a>
+  <a class="nav-link {% if active == 'general' %}active{% endif %}" href="{{ url_for('settings.general') }}">General</a>
+  <a class="nav-link {% if active == 'smtp' %}active{% endif %}" href="{{ url_for('settings.smtp') }}">
+    Email alerts
+  </a>
+  <a class="nav-link {% if active == 'backup' %}active{% endif %}" href="{{ url_for('settings.backup') }}">Backup</a>
+</nav>
+{% endmacro %}

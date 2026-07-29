@@ -1,15 +1,50 @@
 {% extends "base.html" %}
-{% block title %}SMTP Settings · Crypto Signal Bot{% endblock %}
+{% from "settings/_nav.html" import settings_nav %}
+{% block title %}Email alerts · Crypto Signal Bot{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h3 mb-0">SMTP settings</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-2">
+  <div>
+    <h1 class="h3 mb-1">Email alerts (SMTP)</h1>
+    <p class="text-secondary mb-0">
+      When the scanner fires a new BUY or SELL, an email is sent to <strong>Receiver email</strong> below.
+    </p>
+  </div>
   <form method="post" action="{{ url_for('settings.smtp_test') }}">
-    <button type="submit" class="btn btn-outline-secondary btn-sm">Send test email</button>
+    <button type="submit" class="btn btn-outline-primary btn-sm">Send test email</button>
   </form>
 </div>
 
-<form method="post" class="card shadow-sm">
+{{ settings_nav('smtp') }}
+
+<div class="alert alert-info border-0 shadow-sm small mb-4">
+  <strong>Gmail example:</strong> server <code>smtp.gmail.com</code>, port <code>587</code>, enable <strong>Use TLS</strong>,
+  use a Google <strong>App Password</strong> (not your normal login password).
+  Put your personal inbox in <strong>Receiver email</strong> — that is where signal alerts arrive.
+</div>
+
+<form method="post" class="card shadow-sm border-0">
   <div class="card-body row g-3">
+    <div class="col-12">
+      <h2 class="h6 text-uppercase text-secondary mb-0">Where alerts go</h2>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label fw-semibold">Receiver email <span class="text-danger">*</span></label>
+      <input type="email" name="receiver_email" class="form-control form-control-lg" value="{{ smtp.receiver_email }}" placeholder="you@example.com" required>
+      <div class="form-text">Signal BUY/SELL notifications are delivered here.</div>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Sender email</label>
+      <input type="email" name="sender_email" class="form-control" value="{{ smtp.sender_email }}">
+      <div class="form-text">From address (usually your SMTP account).</div>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">From name</label>
+      <input type="text" name="sender_name" class="form-control" value="{{ smtp.sender_name }}" placeholder="CryptoSignals">
+    </div>
+    <div class="col-12"><hr class="my-1"></div>
+    <div class="col-12">
+      <h2 class="h6 text-uppercase text-secondary mb-0">Mail server</h2>
+    </div>
     <div class="col-md-8">
       <label class="form-label">SMTP server</label>
       <input type="text" name="smtp_server" class="form-control" value="{{ smtp.smtp_server }}">
@@ -24,12 +59,12 @@
     </div>
     <div class="col-md-6">
       <label class="form-label">Password</label>
-      <input type="password" name="password" class="form-control" value="{{ smtp.password }}">
+      <input type="password" name="password" class="form-control" value="{{ smtp.password }}" autocomplete="new-password">
     </div>
     <div class="col-md-6">
       <div class="form-check">
         <input class="form-check-input" type="checkbox" name="use_tls" id="use_tls" {% if smtp.use_tls %}checked{% endif %}>
-        <label class="form-check-label" for="use_tls">Use TLS</label>
+        <label class="form-check-label" for="use_tls">Use TLS (STARTTLS)</label>
       </div>
     </div>
     <div class="col-md-6">
@@ -38,27 +73,13 @@
         <label class="form-check-label" for="use_ssl">Use SSL</label>
       </div>
     </div>
-    <div class="col-md-6">
-      <label class="form-label">From name</label>
-      <input type="text" name="sender_name" class="form-control" value="{{ smtp.sender_name }}" placeholder="Coditium">
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Sender email</label>
-      <input type="email" name="sender_email" class="form-control" value="{{ smtp.sender_email }}">
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Receiver email</label>
-      <input type="email" name="receiver_email" class="form-control" value="{{ smtp.receiver_email }}">
-    </div>
-    <div class="col-12">
-      <p class="small text-secondary mb-0">Gmail: host <code>smtp.gmail.com</code>, port <code>587</code>, enable TLS (STARTTLS), use an App Password.</p>
-    </div>
     <div class="col-12">
       <label class="form-label">Subject template</label>
       <input type="text" name="subject_template" class="form-control" value="{{ smtp.subject_template }}">
+      <div class="form-text">Placeholders: <code>{signal_type}</code>, <code>{symbol}</code></div>
     </div>
     <div class="col-12">
-      <button type="submit" class="btn btn-primary">Save SMTP settings</button>
+      <button type="submit" class="btn btn-primary">Save email settings</button>
     </div>
   </div>
 </form>

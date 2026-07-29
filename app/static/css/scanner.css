@@ -1,7 +1,30 @@
+.scanner-main-panels {
+  align-items: stretch;
+}
+
 .scanner-hero {
   background: linear-gradient(135deg, #0d6efd22 0%, #19875411 100%);
   border-radius: 1rem;
   border: 1px solid rgba(13, 110, 253, 0.15);
+  min-height: 100%;
+}
+
+.scanner-strategies-panel {
+  border-radius: 1rem;
+  border: 1px solid rgba(13, 110, 253, 0.12);
+  background: var(--bs-body-bg);
+  padding: 1rem 1.25rem;
+  min-height: 100%;
+}
+
+.scanner-strategies-scroll {
+  max-height: min(72vh, 900px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.scanner-relative-time {
+  font-variant-numeric: tabular-nums;
 }
 
 .scanner-coin-card {

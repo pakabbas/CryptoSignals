@@ -41,7 +41,12 @@
     <div class="card shadow-sm h-100 border-0">
       <div class="card-body">
         <div class="text-secondary small">Last automated scan</div>
-        <div class="fw-semibold">{{ runtime.last_scan_time }}</div>
+        {% set last_scan = runtime.last_scan_time %}
+        {% if last_scan and last_scan != '—' %}
+        <div class="fw-semibold scanner-relative-time" data-relative-time="{{ last_scan }}" title="{{ last_scan }}">—</div>
+        {% else %}
+        <div class="fw-semibold">Never</div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -55,60 +60,65 @@
   </div>
 </div>
 
-<section class="scanner-hero p-3 p-md-4 mb-4">
-  <h2 class="h5 mb-3">Market snapshot</h2>
-  <div class="row g-3">
-    {% for t in tickers %}
-    <div class="col-md-6 col-xl-4">
-      <div class="card scanner-coin-card shadow-sm h-100 border-0">
-        <div class="card-body">
-          {% if t.error %}
-          <div class="text-danger small">{{ t.symbol }} — {{ t.error }}</div>
-          {% else %}
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="text-secondary small">{{ t.symbol }} · {{ t.timeframe }}</div>
-              <div class="display-6 fw-bold mb-0">${{ "{:,.2f}".format(t.price) if t.price else "—" }}</div>
-              {% if t.change_pct is not none %}
-              <span class="badge {% if t.change_pct >= 0 %}text-bg-success{% else %}text-bg-danger{% endif %} mt-1">
-                {% if t.change_pct >= 0 %}+{% endif %}{{ "%.2f"|format(t.change_pct) }}% vs prev candle
-              </span>
+<div class="row g-3 mb-4 scanner-main-panels">
+  <div class="col-lg-5 col-xl-4">
+    <section class="scanner-hero p-3 p-md-4 h-100">
+      <h2 class="h5 mb-3">Market snapshot</h2>
+      <div class="row g-3">
+        {% for t in tickers %}
+        <div class="col-12">
+          <div class="card scanner-coin-card shadow-sm h-100 border-0">
+            <div class="card-body">
+              {% if t.error %}
+              <div class="text-danger small">{{ t.symbol }} — {{ t.error }}</div>
+              {% else %}
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="text-secondary small">{{ t.symbol }} · {{ t.timeframe }}</div>
+                  <div class="display-6 fw-bold mb-0">${{ "{:,.2f}".format(t.price) if t.price else "—" }}</div>
+                  {% if t.change_pct is not none %}
+                  <span class="badge {% if t.change_pct >= 0 %}text-bg-success{% else %}text-bg-danger{% endif %} mt-1">
+                    {% if t.change_pct >= 0 %}+{% endif %}{{ "%.2f"|format(t.change_pct) }}% vs prev candle
+                  </span>
+                  {% endif %}
+                </div>
+                {% if t.volume %}
+                <div class="text-end small">
+                  <div class="text-secondary">Volume</div>
+                  <div class="fw-semibold">{{ "{:,.0f}".format(t.volume) }}</div>
+                </div>
+                {% endif %}
+              </div>
+              {% if t.sparkline_points %}
+              <svg class="scanner-sparkline mt-3" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
+                <polyline fill="none" stroke="var(--bs-primary)" stroke-width="2" points="{{ t.sparkline_points }}"/>
+              </svg>
+              {% endif %}
               {% endif %}
             </div>
-            {% if t.volume %}
-            <div class="text-end small">
-              <div class="text-secondary">Volume</div>
-              <div class="fw-semibold">{{ "{:,.0f}".format(t.volume) }}</div>
-            </div>
-            {% endif %}
           </div>
-          {% if t.sparkline_points %}
-          <svg class="scanner-sparkline mt-3" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden="true">
-            <polyline fill="none" stroke="var(--bs-primary)" stroke-width="2" points="{{ t.sparkline_points }}"/>
-          </svg>
-          {% endif %}
-          {% endif %}
         </div>
+        {% else %}
+        <div class="col-12 text-secondary">No enabled coins to display.</div>
+        {% endfor %}
       </div>
-    </div>
-    {% else %}
-    <div class="col-12 text-secondary">No enabled coins to display.</div>
-    {% endfor %}
+    </section>
   </div>
-</section>
 
-<h2 class="h5 mb-3">Strategy readiness</h2>
-<p class="text-secondary small mb-3">
-  Each card shows how many BUY/SELL rules are <strong>met</strong> vs <strong>pending</strong> on the last <em>closed</em> candle.
-  A full signal triggers when all rules in that block match (respecting AND/OR logic). Next check: when the current candle closes.
-</p>
-
-<div class="row g-3 mb-4">
-  {% for view in live_views %}
-  {% set buy = side_progress(view.long) %}
-  {% set sell = side_progress(view.short) %}
-  <div class="col-lg-6">
-    <div class="card scanner-strategy-card shadow-sm h-100 {% if view.signal_type == 'BUY' %}signal-ready{% elif view.signal_type == 'SELL' %}signal-sell{% endif %}">
+  <div class="col-lg-7 col-xl-8">
+    <div class="scanner-strategies-panel h-100 d-flex flex-column">
+      <h2 class="h5 mb-1">Strategy readiness</h2>
+      <p class="text-secondary small mb-3">
+        BUY/SELL rules <strong>met</strong> vs <strong>pending</strong> on the last closed candle.
+        Signals fire when a block fully matches (AND/OR). Next check at candle close.
+      </p>
+      <div class="scanner-strategies-scroll flex-grow-1">
+        <div class="row g-3">
+          {% for view in live_views %}
+          {% set buy = side_progress(view.long) %}
+          {% set sell = side_progress(view.short) %}
+          <div class="col-12">
+            <div class="card scanner-strategy-card shadow-sm h-100 {% if view.signal_type == 'BUY' %}signal-ready{% elif view.signal_type == 'SELL' %}signal-sell{% endif %}">
       <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
         <div>
           <div class="fw-semibold">{{ view.strategy_name }}</div>
@@ -187,6 +197,10 @@
   {% else %}
   <div class="col-12 text-secondary">No strategy/coin pairs to monitor.</div>
   {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="card shadow-sm border-0">

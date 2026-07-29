@@ -21,3 +21,13 @@ def test_signals_page_loads(client):
     response = client.get("/signals/")
     assert response.status_code == 200
     assert b"Signal history" in response.data
+
+
+def test_settings_hub_and_smtp(client):
+    response = client.get("/settings/")
+    assert response.status_code == 200
+    assert b"Email alerts" in response.data
+
+    response = client.get("/settings/smtp")
+    assert response.status_code == 200
+    assert b"Receiver email" in response.data

@@ -1,8 +1,11 @@
 {% extends "base.html" %}
+{% from "settings/_nav.html" import settings_nav %}
 {% block title %}General Settings · Crypto Signal Bot{% endblock %}
 {% block content %}
-<h1 class="h3 mb-4">General settings</h1>
-<form method="post" class="card shadow-sm">
+<h1 class="h3 mb-1">General settings</h1>
+<p class="text-secondary mb-3">Scanner timing, market data exchange, and appearance.</p>
+{{ settings_nav('general') }}
+<form method="post" class="card shadow-sm border-0">
   <div class="card-body row g-3">
     <div class="col-md-6">
       <label class="form-label">Timezone</label>
@@ -42,9 +45,8 @@
         <label class="form-check-label" for="debug_mode">Debug mode</label>
       </div>
     </div>
-    <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
+    <div class="col-12">
       <button type="submit" class="btn btn-primary">Save settings</button>
-      <a class="btn btn-outline-secondary" href="{{ url_for('settings.backup') }}">Backup &amp; restore</a>
     </div>
   </div>
 </form>

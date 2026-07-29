@@ -10,6 +10,22 @@ from app.services.settings_service import SettingsService
 settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
 
 
+@settings_bp.route("/")
+def index():
+    service = SettingsService()
+    smtp_row = service.get_smtp()
+    smtp_configured = bool(
+        smtp_row.smtp_server
+        and smtp_row.receiver_email
+        and smtp_row.sender_email
+    )
+    return render_template(
+        "settings/index.html",
+        smtp=smtp_row,
+        smtp_configured=smtp_configured,
+    )
+
+
 @settings_bp.route("/general", methods=["GET", "POST"])
 def general():
     service = SettingsService()

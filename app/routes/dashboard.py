@@ -24,6 +24,9 @@ def index():
     recent_signals = Signal.query.order_by(Signal.created_at.desc()).limit(10).all()
     recent_logs = LogEntry.query.order_by(LogEntry.created_at.desc()).limit(10).all()
 
+    smtp_row = settings_service.get_smtp()
+    smtp_configured = bool(smtp_row.smtp_server and smtp_row.receiver_email)
+
     return render_template(
         "dashboard.html",
         runtime=runtime,
@@ -33,4 +36,6 @@ def index():
         recent_signals=recent_signals,
         recent_logs=recent_logs,
         running_strategies=StrategyService().list_enabled(),
+        smtp=smtp_row,
+        smtp_configured=smtp_configured,
     )

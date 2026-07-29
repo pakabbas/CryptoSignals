@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% from "settings/_nav.html" import settings_nav %}
 {% block title %}Configuration backup · Crypto Signal Bot{% endblock %}
 {% block content %}
-<h1 class="h3 mb-4">Configuration backup &amp; restore</h1>
+<h1 class="h3 mb-1">Configuration backup &amp; restore</h1>
+<p class="text-secondary mb-3">Export or import strategies, coins, and app settings (SMTP password is not included in exports).</p>
+{{ settings_nav('backup') }}
 <div class="row g-4">
   <div class="col-lg-6">
     <div class="card shadow-sm h-100">
@@ -38,5 +41,5 @@
     </div>
   </div>
 </div>
-<p class="mt-4"><a href="{{ url_for('settings.general') }}">&larr; General settings</a></p>
+<p class="mt-4 mb-0"><a href="{{ url_for('settings.index') }}">&larr; All settings</a></p>
 {% endblock %}

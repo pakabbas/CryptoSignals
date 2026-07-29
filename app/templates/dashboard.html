@@ -1,17 +1,75 @@
 {% extends "base.html" %}
 {% block title %}Dashboard · Crypto Signal Bot{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
   <div>
     <h1 class="h3 mb-1">Dashboard</h1>
     <p class="text-secondary mb-0">Live overview for <strong>{{ runtime.primary_symbol }}</strong></p>
   </div>
-  <span class="badge text-bg-secondary">Step 1 foundation</span>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('scanner.index') }}">Open live scanner</a>
+</div>
+
+{% if not smtp_configured %}
+<div class="alert alert-warning border-0 shadow-sm d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <strong>Email alerts are not configured.</strong>
+    Add SMTP and choose which inbox receives BUY/SELL signals.
+  </div>
+  <a class="btn btn-warning btn-sm" href="{{ url_for('settings.smtp') }}">Set up email alerts</a>
+</div>
+{% else %}
+<div class="alert alert-success border-0 shadow-sm py-2 small mb-4 mb-md-3">
+  Signal emails go to <strong>{{ smtp.receiver_email }}</strong>.
+  <a href="{{ url_for('settings.smtp') }}" class="alert-link">Change</a>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <a href="{{ url_for('settings.smtp') }}" class="text-decoration-none">
+      <div class="card h-100 shadow-sm settings-hub-card border-0">
+        <div class="card-body">
+          <div class="text-secondary small">Email alerts</div>
+          <div class="fw-semibold text-body">SMTP &amp; receiver</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <a href="{{ url_for('settings.general') }}" class="text-decoration-none">
+      <div class="card h-100 shadow-sm settings-hub-card border-0">
+        <div class="card-body">
+          <div class="text-secondary small">Settings</div>
+          <div class="fw-semibold text-body">Exchange &amp; scanner</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <a href="{{ url_for('strategies.index') }}" class="text-decoration-none">
+      <div class="card h-100 shadow-sm settings-hub-card border-0">
+        <div class="card-body">
+          <div class="text-secondary small">Strategies</div>
+          <div class="fw-semibold text-body">{{ running_strategies|length }} enabled</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <a href="{{ url_for('settings.index') }}" class="text-decoration-none">
+      <div class="card h-100 shadow-sm settings-hub-card border-0">
+        <div class="card-body">
+          <div class="text-secondary small">All settings</div>
+          <div class="fw-semibold text-body">Overview</div>
+        </div>
+      </div>
+    </a>
+  </div>
 </div>
 
 <div class="row g-3 mb-4">
   <div class="col-md-3">
-    <div class="card h-100 shadow-sm">
+    <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="text-secondary small">Scanner status</div>
         <div class="fs-5 fw-semibold">{{ runtime.scanner_status }}</div>
@@ -19,7 +77,7 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card h-100 shadow-sm">
+    <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="text-secondary small">Last scan</div>
         <div class="fs-6 fw-semibold">{{ runtime.last_scan_time or '—' }}</div>
@@ -27,7 +85,7 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card h-100 shadow-sm">
+    <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="text-secondary small">Exchange</div>
         <div class="fs-5 fw-semibold text-capitalize">{{ runtime.exchange }}</div>
@@ -35,7 +93,7 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card h-100 shadow-sm">
+    <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="text-secondary small">Default timeframe</div>
         <div class="fs-5 fw-semibold">{{ runtime.default_timeframe }}</div>
@@ -46,7 +104,7 @@
 
 <div class="row g-3">
   <div class="col-lg-6">
-    <div class="card shadow-sm h-100">
+    <div class="card shadow-sm h-100 border-0">
       <div class="card-header bg-transparent fw-semibold">Coins monitored</div>
       <div class="card-body">
         {% if enabled_coins %}
@@ -59,26 +117,27 @@
             {% endfor %}
           </ul>
         {% else %}
-          <p class="text-secondary mb-0">No enabled coins. Enable BTC/USDT on the coin page.</p>
+          <p class="text-secondary mb-0">No enabled coins. Enable BTC/USDT on the <a href="{{ url_for('coins.index') }}">coin page</a>.</p>
         {% endif %}
       </div>
     </div>
   </div>
   <div class="col-lg-6">
-    <div class="card shadow-sm h-100">
+    <div class="card shadow-sm h-100 border-0">
       <div class="card-header bg-transparent fw-semibold">Running strategies</div>
       <div class="card-body">
         {% if running_strategies %}
           <ul class="list-group list-group-flush">
-                  {% for strategy in running_strategies %}
+            {% for strategy in running_strategies %}
               <li class="list-group-item px-0 d-flex justify-content-between">
                 <span>{{ strategy.name }}</span>
                 <span class="small text-secondary">{{ strategy.timeframe }}</span>
               </li>
             {% endfor %}
           </ul>
+          <a class="small" href="{{ url_for('strategies.index') }}">Manage strategies</a>
         {% else %}
-          <p class="text-secondary mb-0">No active strategies yet (Step 3).</p>
+          <p class="text-secondary mb-0">No active strategies. <a href="{{ url_for('strategies.index') }}">Enable or create one</a>.</p>
         {% endif %}
       </div>
     </div>
@@ -87,8 +146,11 @@
 
 <div class="row g-3 mt-1">
   <div class="col-lg-6">
-    <div class="card shadow-sm">
-      <div class="card-header bg-transparent fw-semibold">Last signals</div>
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-transparent fw-semibold d-flex justify-content-between">
+        <span>Last signals</span>
+        <a class="small fw-normal" href="{{ url_for('signals.index') }}">View all</a>
+      </div>
       <div class="card-body">
         {% if recent_signals %}
           <div class="table-responsive">
@@ -107,14 +169,17 @@
             </table>
           </div>
         {% else %}
-          <p class="text-secondary mb-0">No signals yet (Step 2).</p>
+          <p class="text-secondary mb-0">No signals yet.</p>
         {% endif %}
       </div>
     </div>
   </div>
   <div class="col-lg-6">
-    <div class="card shadow-sm">
-      <div class="card-header bg-transparent fw-semibold">Recent alerts / logs</div>
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-transparent fw-semibold d-flex justify-content-between">
+        <span>Recent logs</span>
+        <a class="small fw-normal" href="{{ url_for('logs.index') }}">View all</a>
+      </div>
       <div class="card-body">
         {% if recent_logs %}
           <ul class="list-group list-group-flush">

@@ -22,7 +22,18 @@
           <li class="nav-item"><a class="nav-link" href="{{ url_for('coins.index') }}">BTC/USDT</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('backtest.index') }}">Backtest</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('strategies.index') }}">Strategies</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('settings.general') }}">Settings</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('settings.') %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Settings
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{{ url_for('settings.index') }}">Overview</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('settings.general') }}">General</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('settings.smtp') }}">Email alerts (SMTP)</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('settings.backup') }}">Backup &amp; restore</a></li>
+            </ul>
+          </li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('logs.index') }}">Logs</a></li>
         </ul>
         <span class="navbar-text text-secondary small">Step 5 · Production ready</span>
