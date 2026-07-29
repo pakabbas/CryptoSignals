@@ -130,7 +130,7 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             'chmod +x /var/www/cryptosignals/deploy/*.sh 2>/dev/null || true; bash /tmp/cryptosignals-remote-setup.sh'
 
-      - name: Apply exchange setting (GCP: Binance geo-blocked)
+      - name: Apply exchange setting for GCP
         env:
           SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
           SSH_USER: ${{ secrets.GCP_SSH_USER }}
