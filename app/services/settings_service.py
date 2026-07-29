@@ -73,6 +73,7 @@ class SettingsService(BaseService[AppSetting]):
             "password",
             "use_tls",
             "use_ssl",
+            "sender_name",
             "sender_email",
             "receiver_email",
             "subject_template",

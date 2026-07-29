@@ -6,7 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from flask import Flask
 
-from app.database import db
+from app.scanner.scanner_service import ScannerService
 from app.services.settings_service import SettingsService
 from app.utils.logging_setup import get_logger
 
@@ -14,34 +14,31 @@ logger = get_logger("scanner")
 
 
 class SchedulerService:
-    """Background job infrastructure for the live scanner (Step 2)."""
+    """Background scanner jobs via APScheduler."""
 
     def __init__(self) -> None:
         self.scheduler = BackgroundScheduler(timezone="UTC")
         self.started = False
+        self.scanner = ScannerService()
 
     def init_app(self, app: Flask) -> None:
         self.app = app
-
-        @app.teardown_appcontext
-        def shutdown_scheduler(exception: Exception | None) -> None:  # noqa: ARG001
-            if exception:
-                logger.warning("App context ended with exception")
 
     def start(self) -> None:
         if self.started:
             return
         interval = self.app.config.get("SCANNER_INTERVAL_SECONDS", 60)
         self.scheduler.add_job(
-            self._heartbeat,
+            self._run_scan,
             trigger=IntervalTrigger(seconds=interval),
-            id="scanner_heartbeat",
+            id="live_scanner",
             replace_existing=True,
             max_instances=1,
+            coalesce=True,
         )
         self.scheduler.start()
         self.started = True
-        logger.info("APScheduler started (interval=%ss)", interval)
+        logger.info("APScheduler scanner started (interval=%ss)", interval)
 
     def stop(self) -> None:
         if self.started:
@@ -49,14 +46,11 @@ class SchedulerService:
             self.started = False
             logger.info("APScheduler stopped")
 
-    def _heartbeat(self) -> None:
+    def _run_scan(self) -> None:
         with self.app.app_context():
-            settings = SettingsService()
-            now = datetime.now(timezone.utc).isoformat()
-            settings.set_many(
-                {
-                    "last_scan_time": now,
-                    "scanner_status": "idle (Step 1 — scanner not active yet)",
-                }
-            )
-            logger.debug("Scanner heartbeat at %s", now)
+            stats = self.scanner.run_scan()
+            logger.info("Scan finished: %s", stats)
+
+    def run_once(self) -> dict:
+        with self.app.app_context():
+            return self.scanner.run_scan()

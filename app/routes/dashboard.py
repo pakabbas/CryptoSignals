@@ -5,6 +5,7 @@ from flask import Blueprint, render_template
 from app.models import LogEntry, Signal
 from app.services.coin_service import CoinService
 from app.services.settings_service import SettingsService
+from app.services.strategy_service import StrategyService
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -31,5 +32,5 @@ def index():
         enabled_coins=enabled_coins,
         recent_signals=recent_signals,
         recent_logs=recent_logs,
-        running_strategies=[],
+        running_strategies=StrategyService().list_enabled(),
     )

@@ -39,12 +39,19 @@
       </div>
     </div>
     <div class="col-md-6">
+      <label class="form-label">From name</label>
+      <input type="text" name="sender_name" class="form-control" value="{{ smtp.sender_name }}" placeholder="Coditium">
+    </div>
+    <div class="col-md-6">
       <label class="form-label">Sender email</label>
       <input type="email" name="sender_email" class="form-control" value="{{ smtp.sender_email }}">
     </div>
     <div class="col-md-6">
       <label class="form-label">Receiver email</label>
       <input type="email" name="receiver_email" class="form-control" value="{{ smtp.receiver_email }}">
+    </div>
+    <div class="col-12">
+      <p class="small text-secondary mb-0">Gmail: host <code>smtp.gmail.com</code>, port <code>587</code>, enable TLS (STARTTLS), use an App Password.</p>
     </div>
     <div class="col-12">
       <label class="form-label">Subject template</label>

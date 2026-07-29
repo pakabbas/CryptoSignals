@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
+from app.services.email_service import EmailService
 from app.services.settings_service import SettingsService
 
 settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
@@ -42,6 +43,7 @@ def smtp():
                 "password": request.form.get("password", ""),
                 "use_tls": request.form.get("use_tls") == "on",
                 "use_ssl": request.form.get("use_ssl") == "on",
+                "sender_name": request.form.get("sender_name", "").strip(),
                 "sender_email": request.form.get("sender_email", "").strip(),
                 "receiver_email": request.form.get("receiver_email", "").strip(),
                 "subject_template": request.form.get(
@@ -58,5 +60,11 @@ def smtp():
 
 @settings_bp.route("/smtp/test", methods=["POST"])
 def smtp_test():
-    flash("Test email will be implemented in Step 2.", "info")
+    service = SettingsService()
+    smtp_row = service.get_smtp()
+    try:
+        EmailService().send_test_email(smtp_row)
+        flash("Test email sent successfully.", "success")
+    except Exception as exc:
+        flash(f"Test email failed: {exc}", "danger")
     return redirect(url_for("settings.smtp"))

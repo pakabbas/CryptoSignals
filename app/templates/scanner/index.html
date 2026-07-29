@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Scanner · Crypto Signal Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Live scanner</h1>
+    <p class="text-secondary mb-0">Binance OHLCV · closed-candle signals · BTC/USDT</p>
+  </div>
+  <form method="post" action="{{ url_for('scanner.run_now') }}">
+    <button type="submit" class="btn btn-primary">Run scan now</button>
+  </form>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-secondary small">Status</div>
+        <div class="fw-semibold">{{ runtime.scanner_status }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-secondary small">Last scan</div>
+        <div class="fw-semibold">{{ runtime.last_scan_time }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-secondary small">Interval</div>
+        <div class="fw-semibold">{{ runtime.scanner_interval_seconds }}s</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-transparent fw-semibold">Monitored coins</div>
+      <ul class="list-group list-group-flush">
+        {% for coin in coins %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ coin.symbol }}</span>
+            <span class="badge text-bg-success">Enabled</span>
+          </li>
+        {% else %}
+          <li class="list-group-item text-secondary">No enabled coins.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-transparent fw-semibold">Strategies</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Name</th><th>TF</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for s in strategies %}
+              <tr>
+                <td>{{ s.name }}</td>
+                <td>{{ s.timeframe }}</td>
+                <td>
+                  {% if s.enabled %}
+                    <span class="badge text-bg-success">On</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">Off</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mt-3">
+  <div class="card-header bg-transparent fw-semibold">Recent signals from scanner</div>
+  <div class="card-body table-responsive">
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Time</th><th>Coin</th><th>Type</th><th>TF</th><th>Price</th><th>Email</th></tr></thead>
+      <tbody>
+        {% for signal in recent_signals %}
+          <tr>
+            <td>{{ signal.candle_time }}</td>
+            <td>{{ signal.coin.symbol if signal.coin else '—' }}</td>
+            <td><span class="badge {% if signal.signal_type == 'BUY' %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ signal.signal_type }}</span></td>
+            <td>{{ signal.timeframe }}</td>
+            <td>{{ signal.price }}</td>
+            <td>{% if signal.notified %}Sent{% else %}—{% endif %}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="text-secondary">No signals yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

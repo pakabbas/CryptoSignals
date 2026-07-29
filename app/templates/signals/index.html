@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Signal history · Crypto Signal Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Signal history</h1>
+  <a class="btn btn-outline-primary btn-sm" href="{{ url_for('scanner.index') }}">Scanner</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Candle time (UTC)</th>
+          <th>Recorded</th>
+          <th>Coin</th>
+          <th>Strategy</th>
+          <th>Type</th>
+          <th>TF</th>
+          <th>Price</th>
+          <th>Alert</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for signal in signals %}
+          <tr>
+            <td>{{ signal.candle_time }}</td>
+            <td class="small text-secondary">{{ signal.created_at }}</td>
+            <td>{{ signal.coin.symbol if signal.coin else '—' }}</td>
+            <td>{{ signal.strategy.name if signal.strategy else '—' }}</td>
+            <td>
+              <span class="badge {% if signal.signal_type == 'BUY' %}text-bg-success{% else %}text-bg-danger{% endif %}">
+                {{ signal.signal_type }}
+              </span>
+            </td>
+            <td>{{ signal.timeframe }}</td>
+            <td>{{ signal.price }}</td>
+            <td>{% if signal.notified %}<span class="text-success">Emailed</span>{% else %}<span class="text-secondary">No</span>{% endif %}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="text-secondary">No signals recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

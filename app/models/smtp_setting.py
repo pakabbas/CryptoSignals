@@ -14,6 +14,7 @@ class SmtpSetting(TimestampMixin, db.Model):
     password = db.Column(db.String(255), nullable=False, default="")
     use_tls = db.Column(db.Boolean, nullable=False, default=True)
     use_ssl = db.Column(db.Boolean, nullable=False, default=False)
+    sender_name = db.Column(db.String(128), nullable=False, default="")
     sender_email = db.Column(db.String(255), nullable=False, default="")
     receiver_email = db.Column(db.String(255), nullable=False, default="")
     subject_template = db.Column(

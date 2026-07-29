@@ -70,8 +70,11 @@
       <div class="card-body">
         {% if running_strategies %}
           <ul class="list-group list-group-flush">
-            {% for strategy in running_strategies %}
-              <li class="list-group-item px-0">{{ strategy.name }}</li>
+                  {% for strategy in running_strategies %}
+              <li class="list-group-item px-0 d-flex justify-content-between">
+                <span>{{ strategy.name }}</span>
+                <span class="small text-secondary">{{ strategy.timeframe }}</span>
+              </li>
             {% endfor %}
           </ul>
         {% else %}

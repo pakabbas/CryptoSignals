@@ -83,7 +83,7 @@ jobs:
             echo "EXCHANGE=binance"
             echo "LOG_LEVEL=INFO"
             echo "DEBUG_MODE=false"
-            echo "ENABLE_SCHEDULER=false"
+            echo "ENABLE_SCHEDULER=true"
           } > "$ENV_FILE"
           scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
             "$ENV_FILE" \
@@ -110,6 +110,23 @@ jobs:
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
             "$SSH_USER@$SSH_HOST" \
             'chmod +x /var/www/cryptosignals/deploy/*.sh 2>/dev/null || true; bash /tmp/cryptosignals-remote-setup.sh'
+
+      - name: Apply SMTP settings
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM_NAME: ${{ secrets.SMTP_FROM_NAME }}
+          SMTP_FROM_EMAIL: ${{ secrets.SMTP_FROM_EMAIL }}
+          SMTP_TO_EMAIL: ${{ secrets.SMTP_TO_EMAIL }}
+          SMTP_USE_TLS: ${{ secrets.SMTP_USE_TLS }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "SMTP_HOST='${SMTP_HOST}' SMTP_PORT='${SMTP_PORT}' SMTP_USERNAME='${SMTP_USERNAME}' SMTP_PASSWORD='${SMTP_PASSWORD}' SMTP_FROM_NAME='${SMTP_FROM_NAME}' SMTP_FROM_EMAIL='${SMTP_FROM_EMAIL}' SMTP_TO_EMAIL='${SMTP_TO_EMAIL}' SMTP_USE_TLS='${SMTP_USE_TLS}' /var/www/cryptosignals/.venv/bin/python /var/www/cryptosignals/deploy/apply_smtp_env.py"
 
       - name: Health check
         env:

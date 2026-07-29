@@ -47,6 +47,16 @@ python run.py
 
 Open [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 
+## Step 2 includes
+
+- Binance OHLCV via CCXT, stored in `historical_candles`
+- Indicator engine (EMA, SMA, RSI, MACD, BB, ATR, and more)
+- JSON strategy evaluator with seeded **EMA + RSI + MACD** strategy (BTC/USDT, 1H)
+- Background APScheduler scanner (`ENABLE_SCHEDULER=true`)
+- BUY/SELL signals with duplicate prevention per candle
+- SMTP alert emails + test email button
+- `/scanner/` dashboard and `/signals/` history
+
 ## Step 1 includes
 
 - Flask project structure with services and SQLAlchemy models
