@@ -18,7 +18,7 @@
           <th>Type</th>
           <th>TF</th>
           <th>Price</th>
-          <th>Alert</th>
+          <th>Push</th>
         </tr>
       </thead>
       <tbody>
@@ -35,7 +35,7 @@
             </td>
             <td>{{ signal.timeframe }}</td>
             <td>{{ signal.price }}</td>
-            <td>{% if signal.notified %}<span class="text-success">Emailed</span>{% else %}<span class="text-secondary">No</span>{% endif %}</td>
+            <td>{% if signal.notified %}<span class="text-success">Sent</span>{% else %}<span class="text-secondary">—</span>{% endif %}</td>
           </tr>
         {% else %}
           <tr><td colspan="8" class="text-secondary">No signals recorded.</td></tr>

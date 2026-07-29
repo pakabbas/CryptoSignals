@@ -75,6 +75,7 @@ class SignalService(BaseService[Signal]):
         db.session.flush()
 
         notified = False
+        # Email alerts are off by default (ENABLE_EMAIL_ALERTS); FCM push is the active channel.
         if email_alerts_enabled():
             smtp = SettingsService().get_smtp()
             if smtp.receiver_email and smtp.smtp_server:
@@ -107,7 +108,7 @@ class SignalService(BaseService[Signal]):
 
         signal.notified = notified
         if not notified:
-            logger.warning("Signal saved; no email or push delivery succeeded")
+            logger.warning("Signal saved; no push delivery succeeded")
 
         db.session.commit()
         logger.info("Signal recorded %s %s %s", symbol, signal_type, timeframe)
