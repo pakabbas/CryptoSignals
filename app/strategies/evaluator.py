@@ -538,14 +538,25 @@ class StrategyEvaluator:
             col = f"ATR_{int(node.get('length', 14))}"
         elif name == "VWAP":
             col = "VWAP"
-        elif name in {"STOCHRSIk", "STOCHRSID"}:
+        elif name in {"STOCHRSIK", "STOCHRSID"}:
             length = int(node.get("length", 14))
             stoch_length = int(node.get("stoch_length", length))
             smooth_k = int(node.get("smooth_k", 3))
             smooth_d = int(node.get("smooth_d", 3))
             suffix = f"{length}_{stoch_length}_{smooth_k}_{smooth_d}"
-            prefix = "STOCHRSIk" if name == "STOCHRSIk" else "STOCHRSId"
+            prefix = "STOCHRSIk" if name == "STOCHRSIK" else "STOCHRSId"
             col = f"{prefix}_{suffix}"
+            if col not in df.columns:
+                # Fall back to short alias / any matching StochRSI series
+                alias = f"{prefix}_{length}"
+                if alias in df.columns:
+                    col = alias
+                else:
+                    match = next((c for c in df.columns if c.startswith(f"{prefix}_")), None)
+                    if match:
+                        col = match
+                    else:
+                        return None
         elif name == "MACDH":
             f, s, sig = int(node.get("fast", 12)), int(node.get("slow", 26)), int(node.get("signal", 9))
             col = f"MACDh_{f}_{s}_{sig}"
