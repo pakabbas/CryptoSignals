@@ -40,7 +40,7 @@ def main() -> None:
         if not run_bt:
             return
 
-        from app.models import Coin, Strategy
+        from app.models import Strategy
 
         period_days = int(os.getenv("BASELINE_BACKTEST_DAYS", "7"))
         strategies = (
@@ -48,11 +48,14 @@ def main() -> None:
             .order_by(Strategy.timeframe.asc())
             .all()
         )
-        active_coins = Coin.query.filter_by(enabled=True).order_by(Coin.symbol.asc()).all()
         service = BacktestService()
         ok = fail = 0
         for strategy in strategies:
-            for coin in active_coins:
+            assigned = [coin for coin in strategy.coins if coin.enabled]
+            if not assigned:
+                print(f"SKIP {strategy.name}: no coins assigned")
+                continue
+            for coin in assigned:
                 label = f"{strategy.name} · {coin.symbol}"
                 try:
                     result = service.run(strategy.id, coin.id, period_days, download=True)
@@ -65,9 +68,8 @@ def main() -> None:
                 except Exception as exc:
                     fail += 1
                     print(f"FAIL {label}: {exc}", file=sys.stderr)
-        expected = len(strategies) * len(active_coins)
-        print(f"Done: {ok} ok, {fail} failed (expected {expected})")
-        if fail or ok != expected:
+        print(f"Done: {ok} ok, {fail} failed")
+        if fail:
             sys.exit(1)
 
 

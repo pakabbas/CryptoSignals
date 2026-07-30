@@ -70,10 +70,18 @@ def _build_coin_panels(enabled_coins, strategies_by_coin) -> list[dict[str, Any]
         strategy_rows = []
         for strategy in strategies:
             last = latest_by_strategy.get(strategy.id)
+            strategy_signals = [
+                sig for sig in recent if sig.strategy_id == strategy.id
+            ][:8]
+            strategy_backtests = [
+                bt for bt in backtests if bt.strategy_id == strategy.id
+            ][:3]
             strategy_rows.append(
                 {
                     "strategy": strategy,
                     "last_signal": last,
+                    "signals": strategy_signals,
+                    "backtests": strategy_backtests,
                 }
             )
 
@@ -105,8 +113,13 @@ def index():
 
     strategies_by_coin: dict[int, list] = defaultdict(list)
     for coin in enabled_coins:
-        linked = strategy_service.list_enabled_for_coin(coin.id)
-        strategies_by_coin[coin.id] = linked or list(all_enabled_strategies)
+        strategies_by_coin[coin.id] = strategy_service.list_enabled_for_coin(coin.id)
+
+    active_strategies = [
+        strategy
+        for strategy in all_enabled_strategies
+        if strategy_service.list_enabled_coins_for_strategy(strategy.id)
+    ]
 
     coin_panels = _build_coin_panels(enabled_coins, strategies_by_coin)
     recent_logs = LogEntry.query.order_by(LogEntry.created_at.desc()).limit(6).all()
@@ -123,7 +136,7 @@ def index():
         primary_coin=primary,
         enabled_coins=enabled_coins,
         coin_panels=coin_panels,
-        running_strategies=all_enabled_strategies,
+        running_strategies=active_strategies,
         recent_logs=recent_logs,
         smtp=smtp_row,
         smtp_configured=smtp_configured,

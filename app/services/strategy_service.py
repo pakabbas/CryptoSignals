@@ -56,24 +56,14 @@ class StrategyService(BaseService[Strategy]):
         enabled_coins = Coin.query.filter_by(enabled=True).all()
         if enabled_coins:
             for strategy in Strategy.query.filter(Strategy.name.in_(RESEARCH_TEMPLATE_NAMES)).all():
-                strategy.coins = list(enabled_coins)
+                if not strategy.coins:
+                    strategy.coins = list(enabled_coins)
         db.session.commit()
-        logger.info("Research strategy templates synced to enabled coins")
+        logger.info("Research strategy templates synced (coin assignments preserved)")
 
     def attach_new_enabled_coins_to_active_strategies(self) -> None:
-        """Add newly seeded enabled coins to strategies that already monitor at least one pair."""
-        enabled = Coin.query.filter_by(enabled=True).order_by(Coin.symbol.asc()).all()
-        if not enabled:
-            return
-        for strategy in Strategy.query.filter_by(enabled=True).all():
-            linked_ids = {c.id for c in strategy.coins}
-            if not linked_ids:
-                strategy.coins = list(enabled)
-                continue
-            for coin in enabled:
-                if coin.id not in linked_ids:
-                    strategy.coins.append(coin)
-        db.session.commit()
+        """No-op: coin assignment is manual per strategy on /strategies/."""
+        return
 
     def _assign_all_enabled_coins_to_defaults(self) -> None:
         coins = Coin.query.filter_by(enabled=True).all()
@@ -97,6 +87,47 @@ class StrategyService(BaseService[Strategy]):
             .order_by(Strategy.name.asc())
             .all()
         )
+
+    def list_enabled_coins_for_strategy(self, strategy_id: int) -> list[Coin]:
+        strategy = self.get(strategy_id)
+        return [coin for coin in strategy.coins if coin.enabled]
+
+    def list_scan_pairs(self) -> list[tuple[Coin, Strategy]]:
+        """Enabled coin/strategy pairs explicitly linked in strategy_coins."""
+        pairs: list[tuple[Coin, Strategy]] = []
+        for strategy in self.list_enabled():
+            for coin in strategy.coins:
+                if coin.enabled:
+                    pairs.append((coin, strategy))
+        return pairs
+
+    def is_pair_allowed(self, strategy_id: int, coin_id: int) -> bool:
+        coin = Coin.query.filter_by(id=coin_id, enabled=True).first()
+        if coin is None:
+            return False
+        return (
+            Strategy.query.filter_by(id=strategy_id, enabled=True)
+            .filter(Strategy.coins.any(Coin.id == coin_id))
+            .first()
+            is not None
+        )
+
+    def set_coins(self, strategy_id: int, coin_ids: list[int]) -> Strategy:
+        strategy = self.get(strategy_id)
+        coins = self._resolve_coins(coin_ids)
+        disabled = [coin.symbol for coin in coins if not coin.enabled]
+        if disabled:
+            raise StrategyValidationError(
+                f"Cannot assign disabled coins: {', '.join(disabled)}"
+            )
+        strategy.coins = coins
+        db.session.commit()
+        logger.info(
+            "Updated coin assignment for %s: %s",
+            strategy.name,
+            ", ".join(coin.symbol for coin in coins) or "(none)",
+        )
+        return strategy
 
     def list_all(self) -> list[Strategy]:
         return Strategy.query.order_by(Strategy.name.asc()).all()

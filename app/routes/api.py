@@ -79,6 +79,30 @@ def strategies():
     )
 
 
+@api_bp.route("/strategies/<int:strategy_id>/coins", methods=["PATCH", "PUT"])
+def update_strategy_coins(strategy_id: int):
+    payload = request.get_json(silent=True) or {}
+    raw_ids = payload.get("coin_ids", payload.get("coins", []))
+    coin_ids: list[int] = []
+    if isinstance(raw_ids, list):
+        for item in raw_ids:
+            if isinstance(item, int):
+                coin_ids.append(item)
+            elif isinstance(item, str) and item.isdigit():
+                coin_ids.append(int(item))
+    try:
+        strategy = StrategyService().set_coins(strategy_id, coin_ids)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(
+        {
+            "id": strategy.id,
+            "name": strategy.name,
+            "coin_symbols": [coin.symbol for coin in strategy.coins],
+        }
+    )
+
+
 @api_bp.route("/signals")
 def signals_list():
     limit = min(request.args.get("limit", 50, type=int) or 50, 200)

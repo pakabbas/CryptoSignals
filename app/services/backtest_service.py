@@ -61,6 +61,11 @@ class BacktestService(BaseService[BacktestResult]):
         coin = Coin.query.get_or_404(coin_id)
         timeframe = strategy.timeframe
 
+        if not any(c.id == coin_id and c.enabled for c in strategy.coins):
+            raise ValueError(
+                f"{coin.symbol} is not assigned to strategy '{strategy.name}'"
+            )
+
         if download:
             self.downloader.download_and_store(
                 coin.id,

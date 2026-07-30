@@ -15,7 +15,7 @@
     <form method="post" action="{{ url_for('backtest.run') }}" class="row g-3">
       <div class="col-md-4">
         <label class="form-label">Strategy</label>
-        <select name="strategy_id" class="form-select" required>
+        <select name="strategy_id" id="backtest-strategy" class="form-select" required>
           {% for s in strategies %}
             <option value="{{ s.id }}">{{ s.name }} ({{ s.timeframe }})</option>
           {% endfor %}
@@ -23,11 +23,12 @@
       </div>
       <div class="col-md-3">
         <label class="form-label">Coin</label>
-        <select name="coin_id" class="form-select" required>
+        <select name="coin_id" id="backtest-coin" class="form-select" required>
           {% for c in coins %}
-            <option value="{{ c.id }}">{{ c.symbol }}</option>
+            <option value="{{ c.id }}" data-symbol="{{ c.symbol }}">{{ c.symbol }}</option>
           {% endfor %}
         </select>
+        <div id="backtest-coin-hint" class="form-text text-warning d-none">No coins assigned to this strategy.</div>
       </div>
       <div class="col-md-3">
         <label class="form-label">History period</label>
@@ -89,4 +90,49 @@
     </table>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const strategyCoins = {{ strategy_coin_map | tojson }};
+  const strategySelect = document.getElementById('backtest-strategy');
+  const coinSelect = document.getElementById('backtest-coin');
+  const hint = document.getElementById('backtest-coin-hint');
+  if (!strategySelect || !coinSelect) return;
+
+  const allOptions = Array.from(coinSelect.options).map(function (opt) {
+    return { value: opt.value, label: opt.textContent, symbol: opt.dataset.symbol || opt.textContent };
+  });
+
+  function syncCoins() {
+    const sid = parseInt(strategySelect.value, 10);
+    const allowed = new Set((strategyCoins[sid] || []).map(String));
+    const previous = coinSelect.value;
+    coinSelect.innerHTML = '';
+    let keptPrevious = false;
+    allOptions.forEach(function (opt) {
+      if (!allowed.has(opt.value)) return;
+      const el = document.createElement('option');
+      el.value = opt.value;
+      el.textContent = opt.label;
+      el.dataset.symbol = opt.symbol;
+      if (opt.value === previous) {
+        el.selected = true;
+        keptPrevious = true;
+      }
+      coinSelect.appendChild(el);
+    });
+    if (!keptPrevious && coinSelect.options.length) {
+      coinSelect.selectedIndex = 0;
+    }
+    const empty = coinSelect.options.length === 0;
+    coinSelect.disabled = empty;
+    hint.classList.toggle('d-none', !empty);
+  }
+
+  strategySelect.addEventListener('change', syncCoins);
+  syncCoins();
+})();
+</script>
 {% endblock %}

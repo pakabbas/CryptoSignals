@@ -14,11 +14,17 @@ backtest_bp = Blueprint("backtest", __name__, url_prefix="/backtest")
 @backtest_bp.route("/")
 def index():
     service = BacktestService()
+    strategy_service = StrategyService()
+    strategies = strategy_service.list_enabled()
     return render_template(
         "backtest/index.html",
         results=service.list_recent_summaries(30),
-        strategies=StrategyService().list_enabled(),
+        strategies=strategies,
         coins=[c for c in CoinService().list_coins() if c.enabled],
+        strategy_coin_map={
+            strategy.id: [coin.id for coin in strategy_service.list_enabled_coins_for_strategy(strategy.id)]
+            for strategy in strategies
+        },
         periods=BACKTEST_PERIODS_DAYS,
     )
 
@@ -30,6 +36,10 @@ def run():
     period_days = request.form.get("period_days", 30, type=int)
     if not strategy_id or not coin_id:
         flash("Strategy and coin are required.", "danger")
+        return redirect(url_for("backtest.index"))
+    strategy_service = StrategyService()
+    if not strategy_service.is_pair_allowed(strategy_id, coin_id):
+        flash("This coin is not assigned to the selected strategy.", "danger")
         return redirect(url_for("backtest.index"))
     try:
         result = BacktestService().run(strategy_id, coin_id, period_days)

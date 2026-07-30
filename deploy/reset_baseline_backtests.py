@@ -18,7 +18,7 @@ def main() -> None:
     os.environ.setdefault("ENABLE_SCHEDULER", "false")
 
     from app import create_app
-    from app.models import Coin, Strategy
+    from app.models import Strategy
     from app.services.backtest_service import BacktestService
     from app.strategies.research_templates import RESEARCH_TEMPLATE_NAMES
 
@@ -34,22 +34,14 @@ def main() -> None:
             .order_by(Strategy.timeframe.asc(), Strategy.name.asc())
             .all()
         )
-        coins = Coin.query.filter_by(enabled=True).order_by(Coin.symbol.asc()).all()
-        if len(strategies) != 4:
-            print(f"Expected 4 research strategies, found {len(strategies)}", file=sys.stderr)
-            for s in strategies:
-                print(f"  - {s.name}", file=sys.stderr)
-            sys.exit(1)
-        if len(coins) != 4:
-            print(f"Expected 4 enabled coins, found {len(coins)}", file=sys.stderr)
-            for c in coins:
-                print(f"  - {c.symbol}", file=sys.stderr)
-            sys.exit(1)
-
         ok = 0
         failed = 0
         for strategy in strategies:
-            for coin in coins:
+            assigned = [coin for coin in strategy.coins if coin.enabled]
+            if not assigned:
+                print(f"SKIP {strategy.name}: no coins assigned", file=sys.stderr)
+                continue
+            for coin in assigned:
                 label = f"{strategy.name} · {coin.symbol} · {period_days}d"
                 try:
                     result = service.run(strategy.id, coin.id, period_days, download=True)
@@ -65,8 +57,8 @@ def main() -> None:
                     failed += 1
                     print(f"FAIL {label}: {exc}", file=sys.stderr)
 
-        print(f"Done: {ok} ok, {failed} failed (expected 16)")
-        if ok != 16 or failed:
+        print(f"Done: {ok} ok, {failed} failed")
+        if failed:
             sys.exit(1)
 
 

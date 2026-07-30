@@ -57,9 +57,11 @@ def _coin_ids_from_form() -> list[int]:
 @strategies_bp.route("/")
 def index():
     strategies = StrategyService().list_all()
+    enabled_coins = [c for c in CoinService().list_coins() if c.enabled]
     return render_template(
         "strategies/index.html",
         strategies=strategies,
+        enabled_coins=enabled_coins,
         templates_only=TEMPLATES_ONLY,
     )
 
@@ -163,6 +165,32 @@ def clone(strategy_id: int):
     clone_row = StrategyService().clone(strategy_id)
     flash(f"Cloned as '{clone_row.name}'.", "success")
     return redirect(url_for("strategies.edit", strategy_id=clone_row.id))
+
+
+@strategies_bp.route("/<int:strategy_id>/coins", methods=["GET", "POST"])
+def edit_coins(strategy_id: int):
+    service = StrategyService()
+    strategy = service.get(strategy_id)
+    coins = CoinService().list_coins()
+    enabled_coins = [coin for coin in coins if coin.enabled]
+    selected_coin_ids = [coin.id for coin in strategy.coins]
+
+    if request.method == "POST":
+        try:
+            service.set_coins(strategy_id, _coin_ids_from_form())
+            flash(f"Coin assignment updated for {strategy.name}.", "success")
+            return redirect(url_for("strategies.index"))
+        except StrategyValidationError as exc:
+            flash(str(exc), "danger")
+            selected_coin_ids = _coin_ids_from_form()
+
+    return render_template(
+        "strategies/coins.html",
+        strategy=strategy,
+        coins=enabled_coins,
+        selected_coin_ids=selected_coin_ids,
+        templates_only=TEMPLATES_ONLY,
+    )
 
 
 @strategies_bp.route("/<int:strategy_id>/toggle", methods=["POST"])

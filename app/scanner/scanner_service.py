@@ -38,31 +38,26 @@ class ScannerService:
         now = datetime.now(timezone.utc)
 
         try:
-            enabled_coins = [c for c in self.coins.list_coins() if c.enabled]
-            enabled_strategies = self.strategies.list_enabled()
-            stats["coins"] = len(enabled_coins)
-            stats["strategies"] = len(enabled_strategies)
+            pairs = self.strategies.list_scan_pairs()
+            stats["coins"] = len({coin.id for coin, _ in pairs})
+            stats["strategies"] = len({strategy.id for _, strategy in pairs})
 
-            if not enabled_coins:
-                self._update_status("idle — no enabled coins", now)
+            if not pairs:
+                self._update_status("idle — no strategy/coin pairs assigned", now)
                 return stats
 
-            for coin in enabled_coins:
-                coin_strategies = self.strategies.list_enabled_for_coin(coin.id)
-                if not coin_strategies:
-                    coin_strategies = enabled_strategies
-                for strategy in coin_strategies:
-                    try:
-                        if self._scan_pair(coin, strategy):
-                            stats["signals"] += 1
-                    except Exception as exc:
-                        stats["errors"] += 1
-                        logger.exception(
-                            "Scan failed coin=%s strategy=%s: %s",
-                            coin.symbol,
-                            strategy.name,
-                            exc,
-                        )
+            for coin, strategy in pairs:
+                try:
+                    if self._scan_pair(coin, strategy):
+                        stats["signals"] += 1
+                except Exception as exc:
+                    stats["errors"] += 1
+                    logger.exception(
+                        "Scan failed coin=%s strategy=%s: %s",
+                        coin.symbol,
+                        strategy.name,
+                        exc,
+                    )
 
             self._update_status(
                 f"running — last scan OK ({stats['signals']} new signals)",

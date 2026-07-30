@@ -229,7 +229,7 @@ Column       Type  Null  Notes
 strategy_id  INT   NO    PK, FK → strategies.id
 coin_id      INT   NO    PK, FK → coins.id
 
-If a strategy has no rows here, scanner uses all enabled coins (legacy fallback).
+If a strategy has no rows here, it is not scanned or backtested until coins are assigned on /strategies/.
 
 ================================================================================
 RELATIONSHIPS (summary)

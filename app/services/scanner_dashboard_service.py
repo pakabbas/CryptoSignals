@@ -88,14 +88,10 @@ class ScannerDashboardService:
             tickers.append(self._coin_ticker(coin, default_tf, ohlcv_cache, now))
 
         views: list[StrategyLiveView] = []
-        all_enabled = self.strategies.list_enabled()
-        for coin in enabled_coins:
-            assigned = self.strategies.list_enabled_for_coin(coin.id)
-            coin_strategies = assigned if assigned else all_enabled
-            for strategy in coin_strategies:
-                views.append(
-                    self._strategy_view(coin, strategy, ohlcv_cache, enriched_cache, now)
-                )
+        for coin, strategy in self.strategies.list_scan_pairs():
+            views.append(
+                self._strategy_view(coin, strategy, ohlcv_cache, enriched_cache, now)
+            )
 
         views.sort(
             key=lambda v: (

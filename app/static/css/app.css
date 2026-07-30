@@ -124,6 +124,27 @@ body {
   vertical-align: text-top;
 }
 
+.dashboard-page .dash-strategy-tabs .nav-link {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.dashboard-page .dash-strategy-tabs .dash-strat-name {
+  max-width: 9rem;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.dashboard-page .dash-strategy-tabs .badge {
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
 .dashboard-page .dash-tab-content {
   background: var(--bs-body-bg);
 }

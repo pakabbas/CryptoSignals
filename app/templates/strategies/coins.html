@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Assign coins · {{ strategy.name }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="h3 mb-1">Assign coins</h1>
+  <p class="text-secondary mb-0">
+    {{ strategy.name }} · {{ strategy.timeframe }}
+    {% if templates_only %}
+      — rule template is fixed; only coin assignment can be changed.
+    {% endif %}
+  </p>
+</div>
+
+<form method="post" action="{{ url_for('strategies.edit_coins', strategy_id=strategy.id) }}">
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <p class="small text-secondary mb-3">
+        Choose which enabled coins this strategy scans and generates signals for.
+        Unselected coins are skipped entirely (scanner, live view, and backtest).
+      </p>
+      {% if coins %}
+        <div class="d-flex flex-wrap gap-3">
+          {% for coin in coins %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="coin_ids" value="{{ coin.id }}"
+                     id="coin_{{ coin.id }}" {% if coin.id in selected_coin_ids %}checked{% endif %}>
+              <label class="form-check-label" for="coin_{{ coin.id }}">{{ coin.symbol }}</label>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-secondary mb-0">No enabled coins. Enable coins on the Coins page first.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary" {% if not coins %}disabled{% endif %}>Save assignment</button>
+    <a href="{{ url_for('strategies.index') }}" class="btn btn-link">Cancel</a>
+  </div>
+</form>
+{% endblock %}
