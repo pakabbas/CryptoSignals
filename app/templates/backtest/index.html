@@ -74,7 +74,13 @@
             <td class="text-end" data-sort-value="{{ r.losing_trades if r.losing_trades is not none else 0 }}">{{ r.losing_trades if r.losing_trades is not none else 0 }}</td>
             <td class="text-end" data-sort-value="{{ r.return_pct or 0 }}">{{ '%.2f'|format(r.return_pct or 0) }}</td>
             <td class="text-end" data-sort-value="{{ r.win_rate or 0 }}">{{ '%.1f'|format(r.win_rate or 0) }}%</td>
-            <td><a href="{{ url_for('backtest.show', result_id=r.id) }}">Report</a></td>
+            <td class="text-nowrap text-end">
+              <a href="{{ url_for('backtest.show', result_id=r.id) }}" class="btn btn-sm btn-outline-secondary">Report</a>
+              <form method="post" action="{{ url_for('backtest.delete', result_id=r.id) }}" class="d-inline"
+                    onsubmit="return confirm('Delete this backtest?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
           </tr>
         {% else %}
           <tr><td colspan="10" class="text-secondary p-4">No backtests yet.</td></tr>

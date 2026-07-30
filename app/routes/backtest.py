@@ -52,6 +52,13 @@ def show(result_id: int):
     )
 
 
+@backtest_bp.route("/<int:result_id>/delete", methods=["POST"])
+def delete(result_id: int):
+    BacktestService().delete(result_id)
+    flash("Backtest deleted.", "success")
+    return redirect(url_for("backtest.index"))
+
+
 @backtest_bp.route("/<int:result_id>/export")
 def export(result_id: int):
     payload = BacktestService().export_json(result_id)
