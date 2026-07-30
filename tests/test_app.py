@@ -19,6 +19,7 @@ def test_scanner_page_loads(client):
     response = client.get("/scanner/")
     assert response.status_code == 200
     assert b"Live scanner" in response.data
+    assert b"scanner-coin-tabs" in response.data or b"No enabled coins" in response.data
 
 
 def test_signals_page_loads(client):

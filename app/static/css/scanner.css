@@ -1,60 +1,157 @@
-.scanner-main-panels {
-  align-items: stretch;
+.scanner-page {
+  --scan-gap: 0.35rem;
 }
 
-.scanner-hero {
-  background: linear-gradient(135deg, #0d6efd22 0%, #19875411 100%);
-  border-radius: 1rem;
-  border: 1px solid rgba(13, 110, 253, 0.15);
-  min-height: 100%;
-}
-
-.scanner-strategies-panel {
-  border-radius: 1rem;
-  border: 1px solid rgba(13, 110, 253, 0.12);
+.scanner-status-bar {
+  padding: 0.4rem 0.65rem;
   background: var(--bs-body-bg);
-  padding: 1rem 1.25rem;
-  min-height: 100%;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.4rem;
 }
 
-.scanner-strategies-scroll {
-  max-height: min(72vh, 900px);
-  overflow-y: auto;
-  padding-right: 0.25rem;
+.scanner-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.scanner-pill-label {
+  color: var(--bs-secondary-color);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.scanner-pill-value {
+  font-weight: 600;
+}
+
+.scanner-coin-tabs {
+  gap: 0.15rem;
+}
+
+.scanner-coin-tabs .nav-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  border-bottom: 0;
+}
+
+.scanner-coin-tabs .nav-link.active {
+  background: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  border-bottom-color: transparent;
+}
+
+.scanner-tab-symbol {
+  letter-spacing: 0.02em;
+}
+
+.scanner-tab-price {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.scanner-coin-tabs .nav-link .badge {
+  font-size: 0.65rem;
+  vertical-align: text-top;
+}
+
+.scanner-tab-content {
+  background: var(--bs-body-bg);
+}
+
+.scanner-coin-head {
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+.scanner-price-big {
+  font-size: clamp(1.75rem, 4vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.scanner-strategy-tabs .nav-link {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.scanner-strategy-tabs .scanner-strat-name {
+  max-width: 11rem;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.scanner-strategy-tabs .badge {
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.scanner-section {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.4rem;
+  padding: 0.55rem 0.65rem 0.65rem;
+  background: var(--bs-tertiary-bg);
+}
+
+.scanner-section-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-secondary-color);
+  margin-bottom: 0.4rem;
+}
+
+.scanner-signals-table {
+  font-size: 0.8125rem;
+  --bs-table-bg: transparent;
+}
+
+.scanner-signals-table > :not(caption) > * > * {
+  padding: 0.3rem 0.4rem;
 }
 
 .scanner-relative-time {
   font-variant-numeric: tabular-nums;
 }
 
-.scanner-coin-card {
-  border-radius: 0.85rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.scanner-coin-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08);
-}
-
 .scanner-sparkline {
-  height: 48px;
+  height: 40px;
   width: 100%;
+  max-width: 28rem;
 }
 
 .scanner-strategy-card {
-  border-radius: 0.85rem;
+  border-radius: 0.75rem;
   overflow: hidden;
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid var(--bs-border-color) !important;
 }
 
 .scanner-strategy-card.signal-ready {
-  border-color: var(--bs-success);
+  border-color: var(--bs-success) !important;
   box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.2);
 }
 
 .scanner-strategy-card.signal-sell {
-  border-color: var(--bs-danger);
+  border-color: var(--bs-danger) !important;
   box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
 }
 
@@ -154,5 +251,20 @@
   50% {
     opacity: 0.5;
     transform: scale(0.85);
+  }
+}
+
+body:has(.scanner-page) main.container {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+@media (max-width: 576px) {
+  .scanner-coin-tabs .nav-link {
+    padding: 0.45rem 0.7rem;
+  }
+
+  .scanner-tab-price {
+    display: none;
   }
 }

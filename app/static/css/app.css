@@ -114,9 +114,20 @@ body {
 }
 
 .dashboard-page .dash-coin-tabs .nav-link {
-  padding: 0.4rem 0.85rem;
-  font-size: 0.9rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  border-bottom: 0;
+}
+
+.dashboard-page .dash-coin-tabs .nav-link.active {
+  background: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  border-bottom-color: transparent;
 }
 
 .dashboard-page .dash-coin-tabs .nav-link .badge {

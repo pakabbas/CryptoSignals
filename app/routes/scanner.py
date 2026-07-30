@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+from collections import defaultdict
+from typing import Any
+
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from app.config.timeframes import SUPPORTED_TIMEFRAMES, normalize_timeframe, timeframe_label
 from app.scanner.scanner_service import ScannerService
 from app.services.coin_service import CoinService
-from app.services.scanner_dashboard_service import ScannerDashboardService
+from app.services.scanner_dashboard_service import (
+    CoinTicker,
+    ScannerDashboardService,
+    StrategyLiveView,
+)
 from app.services.settings_service import SettingsService
 from app.services.signal_service import SignalService
 from app.services.strategy_service import StrategyService
@@ -19,6 +26,42 @@ def _display_timeframe() -> str:
     return normalize_timeframe(request.args.get("tf", default))
 
 
+def _symbol_short(symbol: str) -> str:
+    return (symbol or "").split("/")[0] or symbol
+
+
+def _build_coin_panels(
+    coins: list,
+    tickers: list[CoinTicker],
+    live_views: list[StrategyLiveView],
+    recent_signals: list,
+) -> list[dict[str, Any]]:
+    ticker_by_id = {t.coin_id: t for t in tickers}
+    views_by_symbol: dict[str, list[StrategyLiveView]] = defaultdict(list)
+    for view in live_views:
+        views_by_symbol[view.coin_symbol].append(view)
+
+    signals_by_coin: dict[int, list] = defaultdict(list)
+    for signal in recent_signals:
+        if signal.coin_id:
+            signals_by_coin[signal.coin_id].append(signal)
+
+    panels: list[dict[str, Any]] = []
+    for coin in coins:
+        views = views_by_symbol.get(coin.symbol, [])
+        panels.append(
+            {
+                "coin": coin,
+                "short": _symbol_short(coin.symbol),
+                "ticker": ticker_by_id.get(coin.id),
+                "views": views,
+                "signals": signals_by_coin.get(coin.id, [])[:10],
+                "ready_count": sum(1 for v in views if v.signal_type),
+            }
+        )
+    return panels
+
+
 def _scanner_context():
     settings = SettingsService().get_all()
     runtime = SettingsService().runtime_config()
@@ -27,11 +70,14 @@ def _scanner_context():
     display_tf = _display_timeframe()
     dashboard = ScannerDashboardService()
     tickers, live_views = dashboard.build(market_timeframe=display_tf)
+    coins = [c for c in CoinService().list_coins() if c.enabled]
+    recent_signals = SignalService().recent(30)
     return {
         "runtime": runtime,
-        "coins": [c for c in CoinService().list_coins() if c.enabled],
+        "coins": coins,
+        "coin_panels": _build_coin_panels(coins, tickers, live_views, recent_signals),
         "strategies": StrategyService().list_all(),
-        "recent_signals": SignalService().recent(15),
+        "recent_signals": recent_signals[:15],
         "tickers": tickers,
         "live_views": live_views,
         "side_progress": ScannerDashboardService.side_progress,
