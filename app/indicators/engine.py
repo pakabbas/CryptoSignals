@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
+import numpy as np
 import pandas as pd
 
 IndicatorFn = Callable[[pd.DataFrame, dict[str, Any]], pd.DataFrame]
@@ -18,24 +19,52 @@ def _numeric_frame(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     for col in ("open", "high", "low", "close", "volume"):
         if col in out.columns:
-            out[col] = pd.to_numeric(out[col], errors="coerce")
+            out[col] = pd.to_numeric(out[col], errors="coerce").astype("float64")
     return out
 
 
+def _float_series(series: pd.Series) -> pd.Series:
+    """Coerce to float64; never leave object/pd.NA dtypes that break rolling."""
+    return pd.to_numeric(series, errors="coerce").astype("float64")
+
+
+def _safe_div(numer: pd.Series, denom: pd.Series) -> pd.Series:
+    """Divide with zero → NaN, keeping float64 (avoid pd.NA → object dtype)."""
+    numer = _float_series(numer)
+    denom = _float_series(denom).replace(0.0, np.nan)
+    return numer / denom
+
+
+def _true_range(high: pd.Series, low: pd.Series, close: pd.Series) -> pd.Series:
+    high = _float_series(high)
+    low = _float_series(low)
+    prev_close = _float_series(close).shift(1)
+    return pd.Series(
+        np.maximum.reduce(
+            [
+                (high - low).to_numpy(),
+                (high - prev_close).abs().to_numpy(),
+                (low - prev_close).abs().to_numpy(),
+            ]
+        ),
+        index=high.index,
+        dtype="float64",
+    )
+
+
 def _ema_series(series: pd.Series, length: int) -> pd.Series:
-    return pd.to_numeric(series, errors="coerce").ewm(span=length, adjust=False).mean()
+    return _float_series(series).ewm(span=length, adjust=False).mean()
 
 
 def _rsi_series(close: pd.Series, length: int) -> pd.Series:
-    close = pd.to_numeric(close, errors="coerce")
+    close = _float_series(close)
     delta = close.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
     avg_gain = gain.ewm(alpha=1 / length, adjust=False).mean()
     avg_loss = loss.ewm(alpha=1 / length, adjust=False).mean()
-    rs = avg_gain / avg_loss.replace(0, pd.NA)
-    return 100 - (100 / (1 + rs))
-
+    rs = _safe_div(avg_gain, avg_loss)
+    return _float_series(100 - (100 / (1 + rs)))
 
 @dataclass
 class IndicatorRegistry:
@@ -81,43 +110,36 @@ class IndicatorRegistry:
     def _adx(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
         length = _length(params, 14)
         out = df.copy()
-        up = out["high"].diff()
-        down = -out["low"].diff()
+        high = _float_series(out["high"])
+        low = _float_series(out["low"])
+        up = high.diff()
+        down = -low.diff()
         plus_dm = up.where((up > down) & (up > 0), 0.0)
         minus_dm = down.where((down > up) & (down > 0), 0.0)
-        prev_close = out["close"].shift(1)
-        tr = pd.concat(
-            [
-                out["high"] - out["low"],
-                (out["high"] - prev_close).abs(),
-                (out["low"] - prev_close).abs(),
-            ],
-            axis=1,
-        ).max(axis=1)
+        tr = _true_range(high, low, out["close"])
         atr = tr.rolling(length).mean()
-        plus_di = 100 * (plus_dm.rolling(length).mean() / atr.replace(0, pd.NA))
-        minus_di = 100 * (minus_dm.rolling(length).mean() / atr.replace(0, pd.NA))
-        dx = (100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, pd.NA))
-        out[f"ADX_{length}"] = dx.rolling(length).mean()
+        plus_di = 100 * _safe_div(plus_dm.rolling(length).mean(), atr)
+        minus_di = 100 * _safe_div(minus_dm.rolling(length).mean(), atr)
+        dx = 100 * _safe_div((plus_di - minus_di).abs(), plus_di + minus_di)
+        out[f"ADX_{length}"] = _float_series(dx).rolling(length).mean()
         return out
 
     @staticmethod
     def _ichimoku(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
         out = df.copy()
-        high = out["high"]
-        low = out["low"]
+        high = _float_series(out["high"])
+        low = _float_series(out["low"])
         tenkan = (high.rolling(9).max() + low.rolling(9).min()) / 2
         kijun = (high.rolling(26).max() + low.rolling(26).min()) / 2
         span_a = ((tenkan + kijun) / 2).shift(26)
         span_b = ((high.rolling(52).max() + low.rolling(52).min()) / 2).shift(26)
-        cloud_top = pd.concat([span_a, span_b], axis=1).max(axis=1)
-        cloud_bottom = pd.concat([span_a, span_b], axis=1).min(axis=1)
+        cloud_top = np.maximum(span_a.to_numpy(dtype="float64"), span_b.to_numpy(dtype="float64"))
+        cloud_bottom = np.minimum(span_a.to_numpy(dtype="float64"), span_b.to_numpy(dtype="float64"))
         out["ICHI_tenkan"] = tenkan
         out["ICHI_kijun"] = kijun
         out["ICHI_cloud_top"] = cloud_top
         out["ICHI_cloud_bottom"] = cloud_bottom
         return out
-
     @staticmethod
     def _ema(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
         length = _length(params, 20)
@@ -131,10 +153,8 @@ class IndicatorRegistry:
         source = params.get("source", "close")
         out = df.copy()
         series = out["volume"] if source == "volume" else out["close"]
-        series = pd.to_numeric(series, errors="coerce")
-        out[f"SMA_{source}_{length}"] = series.rolling(length).mean()
+        out[f"SMA_{source}_{length}"] = _float_series(series).rolling(length).mean()
         return out
-
     @staticmethod
     def _rsi(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
         length = _length(params, 14)
@@ -173,18 +193,9 @@ class IndicatorRegistry:
     def _atr(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
         length = _length(params, 14)
         out = df.copy()
-        prev_close = out["close"].shift(1)
-        tr = pd.concat(
-            [
-                out["high"] - out["low"],
-                (out["high"] - prev_close).abs(),
-                (out["low"] - prev_close).abs(),
-            ],
-            axis=1,
-        ).max(axis=1)
+        tr = _true_range(out["high"], out["low"], out["close"])
         out[f"ATR_{length}"] = tr.rolling(length).mean()
         return out
-
     @staticmethod
     def _cci(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
         length = _length(params, 20)
@@ -204,7 +215,7 @@ class IndicatorRegistry:
         delta = tp.diff()
         pos = rmf.where(delta > 0, 0.0).rolling(length).sum()
         neg = rmf.where(delta < 0, 0.0).rolling(length).sum()
-        out[f"MFI_{length}"] = 100 - (100 / (1 + pos / neg.replace(0, pd.NA)))
+        out[f"MFI_{length}"] = 100 - (100 / (1 + _safe_div(pos, neg)))
         return out
 
     @staticmethod
@@ -222,10 +233,10 @@ class IndicatorRegistry:
         smooth_d = int(params.get("smooth_d", 3))
         out = IndicatorRegistry._rsi(df, {"length": rsi_len})
         rsi_col = f"RSI_{rsi_len}"
-        rsi = out[rsi_col]
+        rsi = _float_series(out[rsi_col])
         min_rsi = rsi.rolling(stoch_len).min()
         max_rsi = rsi.rolling(stoch_len).max()
-        raw_k = (rsi - min_rsi) / (max_rsi - min_rsi).replace(0, pd.NA)
+        raw_k = _safe_div(rsi - min_rsi, max_rsi - min_rsi)
         # Scale 0–100 to match common StochRSI thresholds (20/80).
         raw_k = raw_k * 100
         k = raw_k.rolling(smooth_k).mean()
@@ -241,7 +252,7 @@ class IndicatorRegistry:
     def _vwap(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
         out = df.copy()
         tp = (out["high"] + out["low"] + out["close"]) / 3
-        out["VWAP"] = (tp * out["volume"]).cumsum() / out["volume"].cumsum().replace(0, pd.NA)
+        out["VWAP"] = _safe_div((tp * out["volume"]).cumsum(), out["volume"].cumsum())
         return out
 
     @staticmethod

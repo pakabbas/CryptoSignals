@@ -1,0 +1,51 @@
+name: Import OHLCV dump
+
+on:
+  workflow_dispatch:
+    inputs:
+      dump_path:
+        description: Path to JSON dump in the repo
+        required: true
+        default: deploy/data/btc_ohlcv_30d.json
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.GCP_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.GCP_SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync dump + import script
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+          DUMP_PATH: ${{ inputs.dump_path }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            'mkdir -p /var/www/cryptosignals/deploy/data'
+          rsync -avz \
+            -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes" \
+            "deploy/import_ohlcv_dump.py" \
+            "$SSH_USER@$SSH_HOST:/var/www/cryptosignals/deploy/import_ohlcv_dump.py"
+          rsync -avz \
+            -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes" \
+            "$DUMP_PATH" \
+            "$SSH_USER@$SSH_HOST:/var/www/cryptosignals/$DUMP_PATH"
+
+      - name: Import into MySQL
+        env:
+          SSH_HOST: ${{ secrets.GCP_SSH_HOST }}
+          SSH_USER: ${{ secrets.GCP_SSH_USER }}
+          DUMP_PATH: ${{ inputs.dump_path }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" \
+            "cd /var/www/cryptosignals && .venv/bin/python deploy/import_ohlcv_dump.py $DUMP_PATH"
