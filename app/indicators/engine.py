@@ -250,9 +250,18 @@ class IndicatorRegistry:
 
     @staticmethod
     def _vwap(df: pd.DataFrame, params: dict[str, Any]) -> pd.DataFrame:
+        """Session VWAP resetting each UTC day (ScalpingResearch standard)."""
         out = df.copy()
         tp = (out["high"] + out["low"] + out["close"]) / 3
-        out["VWAP"] = _safe_div((tp * out["volume"]).cumsum(), out["volume"].cumsum())
+        typical_vol = tp * out["volume"]
+        if isinstance(out.index, pd.DatetimeIndex):
+            day = out.index.tz_convert("UTC").date if out.index.tz is not None else out.index.date
+            day_key = pd.Series(day, index=out.index)
+            cum_pv = typical_vol.groupby(day_key).cumsum()
+            cum_vol = out["volume"].groupby(day_key).cumsum()
+            out["VWAP"] = _safe_div(cum_pv, cum_vol)
+        else:
+            out["VWAP"] = _safe_div(typical_vol.cumsum(), out["volume"].cumsum())
         return out
 
     @staticmethod

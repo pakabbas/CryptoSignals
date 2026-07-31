@@ -15,6 +15,7 @@ def test_all_scalping_templates_validate():
         validate_definition(template["definition_json"])
         assert template["timeframe"] == "5m"
         assert "risk" in template["definition_json"]
+        assert "management" in template["definition_json"]
         assert template["coin_symbols"] == list(SCALPING_COIN_SYMBOLS)
 
 

@@ -83,17 +83,47 @@ class ScannerService:
         if not result.signal_type:
             return False
 
-        # Re-enrich for ATR risk (evaluate already enriched internally; fetch ATR via helper)
         enriched = self.evaluator._enrich_dataframe(df, strategy.definition_json)
-        atr = self.evaluator.atr_at_index(enriched, strategy.definition_json, result.bar_index)
-        from app.risk.levels import levels_for_signal_alert
-
-        levels = levels_for_signal_alert(
-            result.signal_type,
-            result.price,
-            definition=strategy.definition_json,
-            atr=atr,
+        from app.strategies.scalp_management import (
+            build_risk_levels,
+            is_fresh_bb_touch,
+            management_from_definition,
         )
+
+        mgmt = management_from_definition(strategy.definition_json)
+        if mgmt.get("fresh_bb_touch") and not is_fresh_bb_touch(
+            enriched,
+            result.bar_index,
+            "long" if result.signal_type == "BUY" else "short",
+        ):
+            return False
+
+        entry_price = result.price
+        atr_bar = result.bar_index
+        if str(mgmt.get("entry_fill", "close")).lower() == "next_open":
+            next_i = result.bar_index + 1
+            if next_i < len(enriched):
+                entry_price = float(enriched["open"].iloc[next_i])
+                atr_bar = result.bar_index
+
+        atr = self.evaluator.atr_at_index(enriched, strategy.definition_json, atr_bar)
+        stop_loss, take_profit = build_risk_levels(
+            result.signal_type,
+            entry_price,
+            enriched,
+            strategy.definition_json,
+            atr_bar,
+        )
+        if stop_loss is None or take_profit is None:
+            from app.risk.levels import levels_for_signal_alert
+
+            levels = levels_for_signal_alert(
+                result.signal_type,
+                entry_price,
+                definition=strategy.definition_json,
+                atr=atr,
+            )
+            stop_loss, take_profit = levels.stop_loss, levels.take_profit
 
         candle_time = result.candle_time.to_pydatetime()
         created = self.signals.create_and_notify(
@@ -103,10 +133,10 @@ class ScannerService:
             symbol=coin.symbol,
             signal_type=result.signal_type,
             timeframe=timeframe,
-            price=result.price,
+            price=entry_price,
             candle_time=candle_time,
-            stop_loss=levels.stop_loss,
-            take_profit=levels.take_profit,
+            stop_loss=stop_loss,
+            take_profit=take_profit,
             definition=strategy.definition_json,
             atr=atr,
         )
