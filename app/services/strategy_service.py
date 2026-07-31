@@ -12,19 +12,44 @@ from app.strategies.research_templates import (
     RESEARCH_TEMPLATES,
     RESEARCH_TEMPLATE_NAMES,
 )
+from app.strategies.scalping_templates import (
+    SCALPING_COIN_SYMBOLS,
+    SCALPING_TEMPLATE_NAMES,
+    SCALPING_TEMPLATES,
+)
 from app.strategies.validator import StrategyValidationError, validate_definition
 from app.utils.logging_setup import get_logger
 
 logger = get_logger("strategy")
 
+ACTIVE_TEMPLATE_NAMES = RESEARCH_TEMPLATE_NAMES + SCALPING_TEMPLATE_NAMES
+
 
 class StrategyService(BaseService[Strategy]):
     def ensure_default_strategies(self) -> None:
-        """Seed / refresh fixed Research.txt templates (replaces custom defaults)."""
+        """Seed / refresh fixed research + scalping templates."""
         self.ensure_research_templates()
 
     def ensure_research_templates(self) -> None:
-        for item in RESEARCH_TEMPLATES:
+        self._upsert_templates(RESEARCH_TEMPLATES)
+        self._upsert_templates(SCALPING_TEMPLATES)
+        db.session.commit()
+
+        for legacy_name in LEGACY_STRATEGY_NAMES:
+            legacy = Strategy.query.filter_by(name=legacy_name).first()
+            if legacy:
+                legacy.enabled = False
+
+        for strategy in Strategy.query.all():
+            if strategy.name not in ACTIVE_TEMPLATE_NAMES:
+                strategy.enabled = False
+
+        self._seed_default_coins()
+        db.session.commit()
+        logger.info("Research + scalping strategy templates synced (coin assignments preserved)")
+
+    def _upsert_templates(self, templates: list[dict]) -> None:
+        for item in templates:
             validate_definition(item["definition_json"])
             existing = Strategy.query.filter_by(name=item["name"]).first()
             if existing:
@@ -41,25 +66,25 @@ class StrategyService(BaseService[Strategy]):
                     timeframe=item.get("timeframe", "1H"),
                 )
                 db.session.add(strategy)
-                logger.info("Seeded research template %s", item["name"])
-        db.session.commit()
+                logger.info("Seeded template %s", item["name"])
 
-        for legacy_name in LEGACY_STRATEGY_NAMES:
-            legacy = Strategy.query.filter_by(name=legacy_name).first()
-            if legacy:
-                legacy.enabled = False
-
-        for strategy in Strategy.query.all():
-            if strategy.name not in RESEARCH_TEMPLATE_NAMES:
-                strategy.enabled = False
-
+    def _seed_default_coins(self) -> None:
         enabled_coins = Coin.query.filter_by(enabled=True).all()
-        if enabled_coins:
-            for strategy in Strategy.query.filter(Strategy.name.in_(RESEARCH_TEMPLATE_NAMES)).all():
-                if not strategy.coins:
-                    strategy.coins = list(enabled_coins)
-        db.session.commit()
-        logger.info("Research strategy templates synced (coin assignments preserved)")
+        scalp_coins = (
+            Coin.query.filter(Coin.symbol.in_(SCALPING_COIN_SYMBOLS), Coin.enabled.is_(True))
+            .order_by(Coin.symbol.asc())
+            .all()
+        )
+        if not scalp_coins:
+            scalp_coins = list(enabled_coins)
+
+        for strategy in Strategy.query.filter(Strategy.name.in_(RESEARCH_TEMPLATE_NAMES)).all():
+            if not strategy.coins and enabled_coins:
+                strategy.coins = list(enabled_coins)
+
+        for strategy in Strategy.query.filter(Strategy.name.in_(SCALPING_TEMPLATE_NAMES)).all():
+            if not strategy.coins and scalp_coins:
+                strategy.coins = list(scalp_coins)
 
     def attach_new_enabled_coins_to_active_strategies(self) -> None:
         """No-op: coin assignment is manual per strategy on /strategies/."""
